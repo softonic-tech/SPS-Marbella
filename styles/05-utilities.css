@@ -1,0 +1,15 @@
+/* =========================================================================
+   05 — Scroll reveal + utility classes.
+        Ported verbatim from the approved index.html.
+        (The original footer rules are omitted: the approved build hides the
+        footer with `footer{display:none}` and it is not rendered here.)
+   ========================================================================= */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .65s ease, transform .65s ease;
+}
+.reveal.visible { opacity: 1; transform: none; }
+
+.hidden { display: none !important; }

@@ -1,0 +1,28 @@
+{
+  "name": "sps-marbella",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SPS Marbella — one vision, four divisions. Next.js App Router rebuild of the approved site.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "mongodb": "^7.7.0",
+    "next": "^16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/node": "22.18.1",
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9",
+    "eslint": "9.39.5",
+    "eslint-config-next": "^16.4.2",
+    "typescript": "5.9.2"
+  }
+}

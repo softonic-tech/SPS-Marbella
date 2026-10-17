@@ -1,0 +1,182 @@
+/* =========================================================================
+   09 — Responsive rules for the editorial header, hero and landing page.
+        Ported verbatim from the approved index.html, in source order.
+        The ≤780px block swaps in the approved mobile hero artwork and
+        re-lays the four divisions as stacked rows.
+   ========================================================================= */
+
+@media (max-width: 1000px) {
+  .site-header .main-nav { gap: 15px; }
+  .site-header .main-nav a { font-size: 8px; }
+  .header-contact { min-width: 112px; padding: 0 17px; }
+
+  .hero-division { padding-left: 1vw; padding-right: 1vw; }
+  .hero-division h2 { letter-spacing: .08em; }
+}
+
+@media (max-width: 780px) {
+  .site-header { height: 76px; }
+  .site-header .shell { width: calc(100% - 32px); }
+  .site-header .brand { width: 80px; flex-basis: 80px; height: 58px; }
+  .site-header .brand-mark { font-size: 37px; }
+  .site-header .brand-city { margin-top: 7px; font-size: 6.5px; }
+
+  .site-header .main-nav {
+    top: 76px;
+    left: 16px;
+    right: 16px;
+    padding: 18px 20px 24px;
+    background: rgba(246, 240, 230, .98);
+    border: 1px solid rgba(106, 89, 72, .16);
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 18px 45px rgba(82, 63, 43, .12);
+  }
+  .site-header .main-nav a[data-route="home"],
+  .site-header .main-nav a[data-route="contact"] { display: block; }
+  .site-header .main-nav a { font-size: 9px; padding: 10px 0; }
+
+  .header-contact { display: none; }
+  .site-header .header-actions { gap: 13px; }
+  .site-header .lang { gap: 2px; }
+  .site-header .lang button { font-size: 8px; }
+  .site-header .lang button + button:before { margin-right: 5px; }
+  .menu-toggle { font-size: 21px; color: #5e4d3d; padding: 4px 0 4px 6px; }
+
+  .site-header.home-view .lang { display: flex; }
+
+  .editorial-hero {
+    height: 100svh;
+    min-height: 700px;
+    background-image: url('/assets/sps-hero-mobile-selected.png');
+    background-position: center bottom;
+    background-size: cover;
+    padding: 0;
+  }
+
+  .site-header.home-view .main-nav.open { top: 76px; left: 16px; right: 16px; width: auto; }
+
+  .hero-identity { top: 77px; }
+  .hero-identity-mark { font-size: 68px; }
+  .hero-identity-city { font-size: 13px; margin-top: 13px; }
+  .hero-identity-line { width: 74px; margin: 17px auto 12px; }
+  .hero-identity-tag { font-size: 7px; letter-spacing: .3em; text-indent: .3em; }
+
+  .hero-divisions {
+    position: absolute;
+    inset: 210px 0 auto;
+    display: block;
+    min-height: 0;
+    background: rgba(238, 215, 190, .2);
+    border-top: 1px solid rgba(91, 69, 49, .18);
+    border-bottom: 1px solid rgba(91, 69, 49, .18);
+  }
+  .hero-division {
+    height: 70px;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24px;
+    align-items: center;
+    text-align: left;
+    padding: 0 24px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(91, 69, 49, .19);
+    background: rgba(242, 222, 201, .16);
+  }
+  .hero-division:last-child { border-bottom: 0; }
+  .hero-division:active { background: rgba(255, 247, 236, .35); }
+  .hero-division-icon,
+  .hero-division-rule { display: none; }
+  .hero-division h2 {
+    grid-column: 1;
+    font-size: clamp(17px, 5vw, 22px);
+    letter-spacing: .02em;
+    line-height: 1;
+    margin: 0 0 5px;
+  }
+  .hero-division p {
+    grid-column: 1;
+    font-size: 6.4px;
+    line-height: 1.3;
+    letter-spacing: .18em;
+    align-self: start;
+    margin-top: 39px;
+    position: absolute;
+  }
+  .hero-enter { display: none; }
+  .hero-chevron {
+    display: block;
+    grid-column: 2;
+    font: 300 31px/1 var(--sans);
+    color: #826b54;
+    transform: translateY(-1px);
+    justify-self: end;
+  }
+
+  .home-intro,
+  .home-services,
+  .home-method,
+  .home-projects,
+  .home-contact { padding: 78px 0; }
+
+  .home-intro-grid,
+  .home-section-top,
+  .method-grid { grid-template-columns: 1fr; gap: 28px; }
+
+  .home-index { margin-bottom: 24px; }
+
+  .home-intro h2,
+  .home-services h2,
+  .home-method h2,
+  .home-projects h2,
+  .home-contact h2 { font-size: clamp(39px, 12vw, 57px); }
+
+  .home-intro-copy { padding-top: 0; }
+  .home-intro-copy p { font-size: 13px; line-height: 1.8; }
+  .home-section-top { margin-bottom: 35px; }
+
+  .simple-service { grid-template-columns: 35px 1fr 23px; gap: 12px; padding: 22px 0; }
+  .simple-service h3 { font-size: 25px; }
+  .simple-service p { display: none; }
+  .simple-service .go { font-size: 24px; }
+
+  .home-feature { grid-template-columns: 1fr; min-height: 0; }
+  .home-feature-image { min-height: 62vw; order: 1; }
+  .home-feature-copy { padding: 72px 20px; order: 2; }
+  .home-feature-copy h2 { font-size: 45px; }
+
+  .home-project-grid { grid-template-columns: 1fr; gap: 38px; margin-top: 38px; }
+  .home-project img,
+  .home-project:nth-child(2) img,
+  .home-project:nth-child(3) img { height: 105vw; max-height: 520px; margin: 0; }
+
+  .home-contact { text-align: left; }
+  .home-contact h2 { margin-left: 0; }
+  .home-contact p { margin-left: 0; }
+}
+
+@media (max-width: 480px) {
+  .site-header .lang button { font-size: 7px; }
+  .hero-identity-mark { font-size: 64px; }
+  .hero-divisions { top: 204px; }
+  .hero-division { height: 67px; padding: 0 20px; grid-template-columns: minmax(0, 1fr) 22px; }
+  .hero-division h2 { font-size: 17px; margin-left: 0; }
+  .hero-division p { font-size: 6px; margin-left: 0; margin-top: 38px; }
+}
+
+@media (max-width: 370px) {
+  .hero-identity { top: 67px; }
+  .hero-identity-mark { font-size: 59px; }
+  .hero-identity-city { font-size: 11px; }
+  .hero-divisions { top: 198px; }
+  .hero-division { height: 64px; grid-template-columns: minmax(0, 1fr) 20px; padding: 0 17px; }
+  .hero-division h2 { font-size: 15.5px; margin-left: 0; }
+  .hero-division p { font-size: 5.5px; margin-left: 0; margin-top: 36px; }
+  .site-header .header-actions { gap: 8px; }
+}
+
+@media (min-width: 781px) {
+  .hero-division h2 { order: 1; }
+  .hero-division-rule { order: 2; }
+  .hero-division p { order: 3; }
+  .hero-enter { order: 4; }
+}

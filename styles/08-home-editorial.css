@@ -1,0 +1,125 @@
+/* =========================================================================
+   08 — Editorial landing page sections below the hero.
+        Ported verbatim from the approved index.html.
+   ========================================================================= */
+
+.home-editorial { background: #f8eee3; color: #5c4734; }
+
+.home-intro { padding: 130px 0; border-bottom: 1px solid rgba(91, 69, 49, .2); }
+.home-intro-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 10vw; align-items: start; }
+
+.home-index {
+  display: block;
+  font-size: 9px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  margin-bottom: 45px;
+  color: #8e765f;
+}
+
+.home-intro h2,
+.home-services h2,
+.home-method h2,
+.home-projects h2,
+.home-contact h2 {
+  font: 400 clamp(44px, 6vw, 88px)/.98 var(--serif);
+  letter-spacing: -.045em;
+  margin: 0;
+}
+
+.home-intro-copy { max-width: 570px; padding-top: 72px; }
+.home-intro-copy p { font-size: 15px; line-height: 1.9; margin: 0 0 35px; color: #806b57; }
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 9px;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #735d47;
+  padding-bottom: 7px;
+}
+
+.home-services { padding: 120px 0; }
+.home-section-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8vw;
+  align-items: end;
+  margin-bottom: 65px;
+}
+.home-section-top p { max-width: 480px; margin: 0 0 8px; color: #806b57; }
+
+.simple-services { border-top: 1px solid rgba(91, 69, 49, .25); }
+.simple-service {
+  display: grid;
+  grid-template-columns: 70px 1fr 1.2fr 32px;
+  align-items: center;
+  gap: 25px;
+  padding: 30px 0;
+  border-bottom: 1px solid rgba(91, 69, 49, .25);
+  transition: padding .3s, background .3s;
+}
+.simple-service:hover { padding-left: 18px; background: rgba(255, 247, 237, .22); }
+.simple-service .num { font-size: 9px; letter-spacing: .2em; color: #947b62; }
+.simple-service h3 { font: 400 clamp(27px, 3vw, 43px)/1 var(--serif); margin: 0; }
+.simple-service p { margin: 0; color: #846e59; font-size: 12px; letter-spacing: .04em; }
+.simple-service .go { font-size: 27px; font-weight: 300; }
+
+.home-feature {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  min-height: 680px;
+  background: #f3e4d5;
+}
+.home-feature-image {
+  min-height: 620px;
+  background: center/cover url('https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1700&q=88');
+}
+.home-feature-copy { display: flex; flex-direction: column; justify-content: center; padding: 8vw; }
+.home-feature-copy h2 {
+  font: 400 clamp(40px, 5vw, 72px)/1.03 var(--serif);
+  letter-spacing: -.04em;
+  margin: 22px 0 28px;
+}
+.home-feature-copy p { color: #806a55; line-height: 1.9; margin: 0 0 32px; }
+
+.home-method { padding: 130px 0; }
+.method-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 10vw; }
+.method-list { border-top: 1px solid rgba(91, 69, 49, .25); }
+.method-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 20px;
+  padding: 25px 0;
+  border-bottom: 1px solid rgba(91, 69, 49, .25);
+}
+.method-row span { font-size: 9px; letter-spacing: .18em; color: #947b62; }
+.method-row h3 { font: 400 25px var(--serif); margin: 0 0 5px; }
+.method-row p { font-size: 12px; color: #826d59; margin: 0; }
+
+.home-projects { padding: 120px 0; border-top: 1px solid rgba(91, 69, 49, .2); }
+.home-project-grid { display: grid; grid-template-columns: 1.1fr .9fr .9fr; gap: 18px; margin-top: 60px; }
+.home-project { display: block; }
+.home-project img { width: 100%; height: 430px; object-fit: cover; filter: saturate(.72) sepia(.12); }
+.home-project:nth-child(2) img { height: 350px; margin-top: 70px; }
+.home-project:nth-child(3) img { height: 390px; margin-top: 25px; }
+.home-project-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(91, 69, 49, .25);
+}
+.home-project-caption strong { font: 400 20px var(--serif); }
+.home-project-caption span {
+  font-size: 8px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #856f5a;
+}
+
+.home-contact { padding: 140px 0; text-align: center; background: #f1e1d1; }
+.home-contact h2 { max-width: 900px; margin: 0 auto 36px; }
+.home-contact p { max-width: 520px; margin: 0 auto 34px; color: #806a55; }

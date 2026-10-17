@@ -1,0 +1,208 @@
+/* =========================================================================
+   07 — SPS editorial header + home hero.
+        Ported verbatim from the approved index.html.
+
+        One mechanical change: the original toggled a `home-view` class on
+        <body> from its hash router. Next renders the header as a component,
+        so the same class now lives on `.site-header` itself. Every selector
+        below targets elements inside the header, so the rewrite
+        (`body.home-view .site-header X` → `.site-header.home-view X`) is
+        cascade-equivalent — relative specificity between these rules and the
+        ones they override is unchanged.
+   ========================================================================= */
+
+.site-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 104px;
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
+  color: #4d4034;
+}
+.site-header .shell { width: calc(100% - 7.5vw); max-width: none; }
+
+.site-header .brand {
+  width: 104px;
+  flex-basis: 104px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #5d4b3a;
+}
+.site-header .brand-mark { font: 400 43px/.82 var(--serif); letter-spacing: -.07em; }
+.site-header .brand-city { margin-top: 8px; font-size: 8px; line-height: 1; letter-spacing: .42em; text-indent: .42em; }
+
+.site-header .main-nav { gap: clamp(24px, 3vw, 55px); margin-left: auto; margin-right: auto; }
+.site-header .main-nav a { font-size: 10px; letter-spacing: .18em; color: #4d4034; }
+.site-header .main-nav a[data-route="home"],
+.site-header .main-nav a[data-route="contact"] { display: none; }
+
+.site-header .header-actions { gap: 22px; }
+.site-header .lang { gap: 7px; align-items: center; }
+.site-header .lang button { font-size: 10px; color: #9b8b79; padding: 4px 2px; }
+.site-header .lang button.active { color: #4d4034; border: 0; }
+.site-header .lang button + button:before { content: "/"; margin-right: 11px; color: #9d907e; }
+
+.header-contact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  min-width: 134px;
+  padding: 0 25px;
+  border: 1px solid #a99073;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  transition: .3s ease;
+}
+.header-contact:hover { background: #695845; color: #fff; border-color: #695845; }
+
+/* --- Home ("editorial") header variant ---------------------------------- */
+
+.site-header.home-view .brand,
+.site-header.home-view .main-nav,
+.site-header.home-view .header-contact { display: none; }
+
+.site-header.home-view .header-inner { justify-content: flex-end; }
+
+.site-header.home-view .menu-toggle { display: none; }
+.site-header.home-view .menu-toggle:before,
+.site-header.home-view .menu-toggle:after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 43px;
+  height: 1px;
+  background: #604c39;
+  transition: .25s;
+}
+.site-header.home-view .menu-toggle:before { top: 9px; }
+.site-header.home-view .menu-toggle:after { top: 20px; }
+
+.site-header.home-view .lang button + button:before { content: none; }
+
+.site-header.home-view .main-nav.open {
+  display: flex;
+  position: absolute;
+  top: 86px;
+  right: 3.75vw;
+  left: auto;
+  width: 260px;
+  margin: 0;
+  padding: 20px 25px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  background: rgba(244, 226, 207, .96);
+  border: 1px solid rgba(91, 69, 49, .18);
+  box-shadow: 0 20px 50px rgba(77, 55, 35, .13);
+}
+.site-header.home-view .main-nav.open a {
+  display: block;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(91, 69, 49, .13);
+}
+
+/* --- Editorial hero ------------------------------------------------------ */
+
+.editorial-hero {
+  position: relative;
+  height: 100svh;
+  min-height: 720px;
+  overflow: hidden;
+  background: #f3e6d8 url('/assets/sps-hero-selected-clean.png') center/cover no-repeat;
+  color: #604b38;
+  isolation: isolate;
+}
+.editorial-hero:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 248, 240, .13);
+  pointer-events: none;
+}
+
+.hero-identity {
+  position: absolute;
+  z-index: 2;
+  top: 5.3%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #5b4633;
+  white-space: nowrap;
+}
+.hero-identity-mark { font: 400 clamp(72px, 8vw, 126px)/.78 var(--serif); letter-spacing: -.075em; }
+.hero-identity-city {
+  margin-top: 20px;
+  font-size: clamp(17px, 1.75vw, 29px);
+  line-height: 1;
+  letter-spacing: .42em;
+  text-indent: .42em;
+}
+.hero-identity-line { width: 128px; height: 1px; background: rgba(78, 58, 40, .72); margin: 25px auto 18px; }
+.hero-identity-tag {
+  font-size: clamp(10px, 1vw, 16px);
+  letter-spacing: .48em;
+  text-indent: .48em;
+  text-transform: uppercase;
+}
+
+.hero-divisions {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 32%;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.hero-division {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 9.2vh 2vw 4vh;
+  border-right: 1px solid rgba(91, 69, 49, .25);
+  transition: background .35s ease, color .35s ease;
+}
+.hero-division:last-child { border-right: 0; }
+.hero-division:hover { background: rgba(255, 247, 236, .2); }
+.hero-division h2 {
+  font: 400 clamp(22px, 2.15vw, 36px)/1.15 var(--serif);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.hero-division-rule { width: 45px; height: 1px; background: currentColor; margin: 23px 0 24px; }
+.hero-division p {
+  margin: 0;
+  font-size: clamp(10px, .92vw, 15px);
+  line-height: 1.65;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+}
+
+.hero-enter { margin-top: 5.5vh; font-size: clamp(9px, .82vw, 13px); letter-spacing: .3em; text-transform: uppercase; }
+.hero-enter:after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 1px;
+  background: currentColor;
+  margin: 11px auto 0;
+  transition: width .3s;
+}
+.hero-division:hover .hero-enter:after { width: 92px; }
+
+.hero-division-icon,
+.hero-chevron { display: none; }

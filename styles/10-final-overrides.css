@@ -1,0 +1,26 @@
+/* =========================================================================
+   10 — Final approved overrides (last rules in the source stylesheet).
+
+        These are the rules that lock the About page statistics into a single
+        horizontal row of three at every width:
+            20+  Years in construction
+            2011 Civil engineering degree
+            80+  Projects delivered
+        They intentionally override the earlier single-column fallbacks in
+        06-responsive.css, so this file must stay LAST in the import order.
+   ========================================================================= */
+
+.founder-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: none !important;
+  width: 100%;
+}
+
+@media (max-width: 780px) {
+  .founder-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    max-width: none !important;
+  }
+  .founder-fact { padding-right: 8px; }
+  .founder-fact span { display: block; overflow-wrap: anywhere; }
+}

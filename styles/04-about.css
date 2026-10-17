@@ -1,0 +1,73 @@
+/* =========================================================================
+   04 — About page: hero, founder profile, story, experience list.
+        Ported verbatim from the approved index.html.
+   ========================================================================= */
+
+.about-hero { padding: 164px 0 84px; background: #f8eee3; color: #5c4734; }
+.about-hero-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 9vw; align-items: end; }
+.about-hero h1 {
+  font: 400 clamp(56px, 7vw, 104px)/.94 var(--serif);
+  letter-spacing: -.05em;
+  margin: 20px 0 0;
+}
+.about-hero p { max-width: 530px; margin: 0 0 12px; color: #806b57; font-size: 16px; line-height: 1.85; }
+
+.founder { background: #f3e4d5; color: #5c4734; padding: 120px 0; }
+.founder-grid { display: grid; grid-template-columns: .88fr 1.12fr; gap: 9vw; align-items: center; }
+
+.founder-portrait { position: relative; margin: 0; padding: 14px; border: 1px solid rgba(91, 69, 49, .3); }
+.founder-portrait img {
+  display: block;
+  width: 100%;
+  height: min(650px, 62vw);
+  object-fit: cover;
+  object-position: center 28%;
+  filter: saturate(.82) contrast(.97);
+}
+.founder-portrait:after { display: none; }
+
+.founder-copy h2 {
+  font: 400 clamp(47px, 5.5vw, 78px)/.95 var(--serif);
+  letter-spacing: -.045em;
+  margin: 16px 0 13px;
+}
+.founder-role {
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: #8e765f;
+  margin-bottom: 35px;
+}
+.founder-copy p { max-width: 570px; color: #806b57; font-size: 14px; line-height: 1.9; margin: 0 0 18px; }
+
+.founder-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(91, 69, 49, .25);
+  margin-top: 38px;
+}
+.founder-fact { padding: 23px 18px 0 0; }
+.founder-fact strong { display: block; font: 400 31px/1 var(--serif); margin-bottom: 9px; }
+.founder-fact span {
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #8e765f;
+}
+
+.about-story { padding: 120px 0; background: #f8eee3; color: #5c4734; }
+.about-story-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 10vw; }
+.about-story h2 { font: 400 clamp(43px, 5vw, 72px)/1 var(--serif); letter-spacing: -.045em; margin: 0; }
+.about-story-copy p { color: #806b57; line-height: 1.9; margin: 0 0 20px; }
+
+.experience-list { margin-top: 42px; border-top: 1px solid rgba(91, 69, 49, .24); }
+.experience-row {
+  display: grid;
+  grid-template-columns: 105px 1fr;
+  gap: 28px;
+  padding: 21px 0;
+  border-bottom: 1px solid rgba(91, 69, 49, .24);
+}
+.experience-row span { font-size: 9px; letter-spacing: .15em; color: #927960; }
+.experience-row strong { font: 400 21px var(--serif); }
