@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import type { ServiceKey } from '@/lib/i18n/types';
 
@@ -54,7 +55,7 @@ export default function HeroSection() {
 
       <nav className="hero-divisions" aria-label="SPS divisions">
         {t.divisions.map(([key, label, tagline]) => (
-          <div className="hero-division" key={key}>
+          <Link className="hero-division" href={`/${key}`} key={key}>
             <span className="hero-division-icon">
               <svg viewBox="0 0 40 40" aria-hidden="true">
                 <path d={divisionIcons[key]} />
@@ -69,7 +70,7 @@ export default function HeroSection() {
             <span className="hero-chevron" aria-hidden="true">
               ›
             </span>
-          </div>
+          </Link>
         ))}
       </nav>
     </section>
