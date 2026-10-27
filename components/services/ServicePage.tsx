@@ -21,8 +21,8 @@ export default function ServicePage({ service }: { service: ServiceKey }) {
         className="page-image"
         src={image[service]}
         alt={s.title}
-        width={1700}
-        height={1133}
+        width={1916}
+        height={821}
         sizes="100vw"
       />
 

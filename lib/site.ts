@@ -54,20 +54,15 @@ export const HEADER_BRAND: 'logo' | 'wordmark' = 'logo';
 export const CONTACT_EMAIL = '';
 
 /**
- * Representative architectural imagery used by the approved build.
- * Swap these for SPS photography in /public/assets when it is available —
- * nothing else needs to change.
+ * Department photography lives in /public/assets. Project tiles still use
+ * representative imagery until SPS project photos are available.
  */
 export const image = {
   hero: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2400&q=88',
-  architecture:
-    'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1700&q=85',
-  construction:
-    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1700&q=85',
-  interiors:
-    'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1700&q=85',
-  development:
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1700&q=85',
+  architecture: '/assets/architecture.png',
+  construction: '/assets/construction.png',
+  interiors: '/assets/interiors.png',
+  development: '/assets/development.png',
   project1: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1300&q=85',
   project2: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1300&q=85',
   project3: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1300&q=85',
