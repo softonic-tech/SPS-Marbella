@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import Reveal from '@/components/ui/Reveal';
 import { useLanguage } from '@/lib/LanguageContext';
 import type { ServiceKey } from '@/lib/i18n/types';
@@ -48,20 +49,26 @@ export default function HomeProjects() {
         <div className="home-project-grid">
           {FEATURED.map((project, i) => (
             <Reveal as="article" className="home-project" key={project.src}>
-              <Image
-                src={project.src}
-                alt={t.projectLabels[i]}
-                width={project.width}
-                height={project.height}
-                sizes="(max-width: 780px) 100vw, 33vw"
-              />
-              <span className="home-project-caption">
-                <strong>{t.projectLabels[i]}</strong>
-                <span>{t.nav[project.category]}</span>
-              </span>
+              <Link href={`/${project.category}`}>
+                <Image
+                  src={project.src}
+                  alt={t.projectLabels[i]}
+                  width={project.width}
+                  height={project.height}
+                  sizes="(max-width: 780px) 100vw, 33vw"
+                />
+                <span className="home-project-caption">
+                  <strong>{t.projectLabels[i]}</strong>
+                  <span>{t.nav[project.category]}</span>
+                </span>
+              </Link>
             </Reveal>
           ))}
         </div>
+
+        <Link className="text-link home-projects-more" href="/projects">
+          {t.allProjects}
+        </Link>
       </div>
     </section>
   );

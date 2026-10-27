@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import Reveal from '@/components/ui/Reveal';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -12,6 +13,9 @@ export default function HomeContact() {
         <span className="home-index">05 · {t.contactEyebrow}</span>
         <h2>{t.contactHeadline}</h2>
         <p>{t.contactBody}</p>
+        <Link className="text-link" href="/contact">
+          {t.contactCta}
+        </Link>
       </Reveal>
     </section>
   );
