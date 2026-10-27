@@ -75,7 +75,7 @@
 }
 .home-feature-image {
   min-height: 620px;
-  background: center/cover url('https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1700&q=88');
+  background: center/cover url('/assets/01-marbella-villa-pool.png');
 }
 .home-feature-copy { display: flex; flex-direction: column; justify-content: center; padding: 8vw; }
 .home-feature-copy h2 {

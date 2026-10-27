@@ -12,7 +12,7 @@ export default function HomeFeature() {
 
   return (
     <section className="home-feature">
-      <div className="home-feature-image" role="img" aria-label="Refined Marbella residence" />
+      <div className="home-feature-image" role="img" aria-label="Marbella villa and pool" />
       <Reveal className="home-feature-copy">
         <span className="home-index">SPS · MARBELLA</span>
         <h2>{t.whyTitle}</h2>
