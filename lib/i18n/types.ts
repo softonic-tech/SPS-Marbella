@@ -100,6 +100,17 @@ export interface Translation {
   contactNote: string;
   services: Record<ServiceKey, ServiceCopy>;
   projectPage: { k: string; title: string; desc: string };
+  projectKinds: Record<'newBuild' | 'basement' | 'extension' | 'renovation', string>;
+  projectStudio: {
+    before: string;
+    during: string;
+    after: string;
+    photos: string;
+    close: string;
+    previous: string;
+    next: string;
+    empty: string;
+  };
   about: AboutCopy;
   contactPage: { k: string; title: string; desc: string };
   form: FormCopy;

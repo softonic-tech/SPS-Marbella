@@ -110,6 +110,22 @@ export const en: Translation = {
     title: 'Projects',
     desc: 'A considered approach to architecture, construction and interiors in Marbella.',
   },
+  projectKinds: {
+    newBuild: 'New build',
+    basement: 'Basement renovation',
+    extension: 'Extension & renovation',
+    renovation: 'Renovation',
+  },
+  projectStudio: {
+    before: 'Before',
+    during: 'During',
+    after: 'After',
+    photos: 'Photographs',
+    close: 'Close',
+    previous: 'Previous',
+    next: 'Next',
+    empty: 'No projects in this division yet.',
+  },
   about: {
     k: 'THE PEOPLE BEHIND THE PROJECT',
     title: 'About SPS Marbella',

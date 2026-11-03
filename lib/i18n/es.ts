@@ -109,6 +109,22 @@ export const es: Translation = {
     title: 'Proyectos',
     desc: 'Una visión integral de arquitectura, construcción e interiores en Marbella.',
   },
+  projectKinds: {
+    newBuild: 'Obra nueva',
+    basement: 'Reforma de sótano',
+    extension: 'Ampliación y reforma',
+    renovation: 'Reforma',
+  },
+  projectStudio: {
+    before: 'Antes',
+    during: 'Durante',
+    after: 'Después',
+    photos: 'Fotografías',
+    close: 'Cerrar',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    empty: 'Todavía no hay proyectos en esta división.',
+  },
   about: {
     k: 'LAS PERSONAS DETRÁS DEL PROYECTO',
     title: 'Sobre SPS Marbella',

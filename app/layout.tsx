@@ -14,6 +14,7 @@ import '@/styles/07-editorial-header-hero.css';
 import '@/styles/08-home-editorial.css';
 import '@/styles/09-editorial-responsive.css';
 import '@/styles/10-final-overrides.css';
+import '@/styles/12-projects.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 

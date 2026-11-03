@@ -108,6 +108,22 @@ export const sv: Translation = {
     title: 'Projekt',
     desc: 'Ett omsorgsfullt helhetsgrepp om arkitektur, byggnation och interiör i Marbella.',
   },
+  projectKinds: {
+    newBuild: 'Nybyggnation',
+    basement: 'Källarrenovering',
+    extension: 'Tillbyggnad och renovering',
+    renovation: 'Renovering',
+  },
+  projectStudio: {
+    before: 'Före',
+    during: 'Under',
+    after: 'Efter',
+    photos: 'Fotografier',
+    close: 'Stäng',
+    previous: 'Föregående',
+    next: 'Nästa',
+    empty: 'Inga projekt i den här avdelningen ännu.',
+  },
   about: {
     k: 'MÄNNISKORNA BAKOM PROJEKTET',
     title: 'Om SPS Marbella',
