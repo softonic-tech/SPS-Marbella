@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import PageHero from '@/components/ui/PageHero';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -117,7 +116,7 @@ export default function ProjectsGallery() {
                       onClick={() => openProject(project)}
                     >
                       <span className="project-index-thumb">
-                        <Image src={project.cover} alt="" fill sizes="76px" className="project-shot-img" />
+                        <img src={`/project-thumbs/${project.id}.jpg`} alt="" />
                       </span>
                       <span className="project-index-copy">
                         <strong>{project.name}</strong>
@@ -130,14 +129,7 @@ export default function ProjectsGallery() {
 
               <div>
                 <div className="project-hero-photo">
-                  <Image
-                    src={active.cover}
-                    alt={active.name}
-                    fill
-                    priority
-                    sizes="(max-width: 980px) 100vw, 70vw"
-                    className="project-shot-img"
-                  />
+                  <img src={active.cover} alt={active.name} fetchPriority="high" />
                 </div>
                 <div className="project-hero-copy">
                   <span className="eyebrow">{t.nav[active.category]}</span>
@@ -173,7 +165,7 @@ export default function ProjectsGallery() {
                   {shown.map((item) =>
                     item.kind === 'video' ? (
                       <div className="project-video" key={item.src}>
-                        <video src={item.src} controls playsInline preload="metadata" />
+                        <video src={item.src} controls playsInline preload="none" />
                       </div>
                     ) : (
                       <button
@@ -182,12 +174,11 @@ export default function ProjectsGallery() {
                         className="project-shot"
                         onClick={() => setLightbox(images.findIndex((image) => image.src === item.src))}
                       >
-                        <Image
+                        <img
                           src={item.src}
                           alt={`${active.name}, ${t.projectStudio[currentStage]}`}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 980px) 50vw, 24vw"
-                          className="project-shot-img"
+                          loading="lazy"
+                          decoding="async"
                         />
                       </button>
                     ),
@@ -212,12 +203,10 @@ export default function ProjectsGallery() {
             </button>
           </div>
           <div className="project-lightbox-frame">
-            <Image
+            <img
               src={lightboxImage.src}
               alt={`${active.name}, ${t.projectStudio[currentStage]}`}
-              fill
-              sizes="92vw"
-              className="project-lightbox-img"
+              decoding="async"
             />
           </div>
           <div className="project-lightbox-nav">

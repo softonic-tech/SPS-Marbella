@@ -122,7 +122,14 @@
   cursor: zoom-in;
 }
 
-.project-shot-img { object-fit: cover; }
+.project-index-thumb img,
+.project-hero-photo img,
+.project-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 .project-video {
   grid-column: 1 / -1;
@@ -180,7 +187,13 @@
   margin: 16px 0;
 }
 
-.project-lightbox-img { object-fit: contain; }
+.project-lightbox-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 .project-empty {
   margin: 0;
