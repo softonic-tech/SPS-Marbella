@@ -10,7 +10,7 @@ export default function HomeContact() {
   return (
     <section className="home-contact">
       <Reveal className="shell">
-        <span className="home-index">05 · {t.contactEyebrow}</span>
+        <span className="home-index">{t.contactEyebrow}</span>
         <h2>{t.contactHeadline}</h2>
         <p>{t.contactBody}</p>
         <Link className="text-link" href="/contact">

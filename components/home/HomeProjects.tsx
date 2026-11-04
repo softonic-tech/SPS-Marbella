@@ -40,7 +40,7 @@ export default function HomeProjects() {
       <div className="shell">
         <Reveal className="home-section-top">
           <div>
-            <span className="home-index">04 · {t.nav.projects}</span>
+            <span className="home-index">{t.nav.projects}</span>
             <h2>{t.projectsTitle}</h2>
           </div>
           <p>{t.projectsDesc}</p>

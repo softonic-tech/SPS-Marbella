@@ -134,7 +134,7 @@
   .home-intro-copy p { font-size: 13px; line-height: 1.8; }
   .home-section-top { margin-bottom: 35px; }
 
-  .simple-service { grid-template-columns: 35px 1fr 23px; gap: 12px; padding: 22px 0; }
+  .simple-service { grid-template-columns: 1fr 23px; gap: 12px; padding: 22px 0; }
   .simple-service h3 { font-size: 25px; }
   .simple-service p { display: none; }
   .simple-service .go { font-size: 24px; }

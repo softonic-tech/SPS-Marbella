@@ -11,7 +11,7 @@ export default function HomeIntro() {
     <section className="home-intro">
       <Reveal className="shell home-intro-grid">
         <div>
-          <span className="home-index">01 · {t.introEyebrow}</span>
+          <span className="home-index">{t.introEyebrow}</span>
           <h2>{t.introTitle}</h2>
         </div>
         <div className="home-intro-copy">
