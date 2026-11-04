@@ -32,9 +32,8 @@ export default function ServicePage({ service }: { service: ServiceKey }) {
           <div>
             <p>{s.body}</p>
             <div className="detail-list">
-              {s.bullets.map((bullet, i) => (
+              {s.bullets.map((bullet) => (
                 <div className="detail-item" key={bullet}>
-                  <span className="eyebrow">0{i + 1} / </span>
                   {bullet}
                 </div>
               ))}
