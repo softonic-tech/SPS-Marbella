@@ -65,28 +65,14 @@
 .header-contact:hover { background: #695845; color: #fff; border-color: #695845; }
 
 /* --- Home ("editorial") header variant ---------------------------------- */
+/* Same chrome as the other pages: logo, nav links, contact, and the menu button. */
 
-.site-header.home-view .brand,
-.site-header.home-view .main-nav,
-.site-header.home-view .header-contact { display: none; }
-
-.site-header.home-view .header-inner { justify-content: flex-end; }
-
-.site-header.home-view .menu-toggle { display: none; }
-.site-header.home-view .menu-toggle:before,
-.site-header.home-view .menu-toggle:after {
-  content: "";
-  position: absolute;
-  right: 0;
-  width: 43px;
-  height: 1px;
-  background: #604c39;
-  transition: .25s;
+.site-header.home-view .menu-toggle {
+  color: #5e4d3d;
+  font-size: 21px;
+  line-height: 1;
+  padding: 4px 0 4px 6px;
 }
-.site-header.home-view .menu-toggle:before { top: 9px; }
-.site-header.home-view .menu-toggle:after { top: 20px; }
-
-.site-header.home-view .lang button + button:before { content: none; }
 
 .site-header.home-view .main-nav.open {
   display: flex;
@@ -132,7 +118,7 @@
 .hero-identity {
   position: absolute;
   z-index: 2;
-  top: 5.3%;
+  top: max(5.3%, 78px);
   left: 50%;
   transform: translateX(-50%);
   text-align: center;

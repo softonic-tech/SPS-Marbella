@@ -11,11 +11,9 @@ import { HEADER_BRAND, NAV_ROUTES, routeFromPathname, routeHref } from '@/lib/si
 /**
  * Site header.
  *
- * The approved build toggles a `home-view` class when the landing page is
- * showing, which hides the brand, nav and contact pill and leaves only the
- * language switcher over the hero. Here that class lives on the header element
- * itself (see the note at the top of styles/07) and is derived from the route,
- * so it is correct in the server-rendered HTML — no flash, no hydration drift.
+ * `home-view` marks the landing page so the menu can drop over the hero.
+ * The class lives on the header element (see the note at the top of styles/07)
+ * and is derived from the route, so it is correct in the server-rendered HTML.
  */
 export default function Header() {
   const { t } = useLanguage();
