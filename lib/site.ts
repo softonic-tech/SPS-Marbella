@@ -46,12 +46,13 @@ export function routeFromPathname(pathname: string): RouteKey {
  */
 export const HEADER_BRAND: 'logo' | 'wordmark' = 'logo';
 
-/**
- * Enquiry inbox. Left empty in the approved build, which makes the contact form
- * show the "connect a contact email" notice instead of opening a mail client.
- * Add the client-approved address before launch.
- */
-export const CONTACT_EMAIL = '';
+/** Enquiry inbox. The contact form opens the visitor's mail client to this address. */
+export const CONTACT_EMAIL = 'contact@spsmarbella.com';
+
+/** Sam's phone, also used for the WhatsApp link. */
+export const CONTACT_PHONE = '+46 76 250 01 72';
+export const CONTACT_PHONE_TEL = '+46762500172';
+export const CONTACT_WHATSAPP = 'https://wa.me/46762500172';
 
 /**
  * Department photography lives in /public/assets. Project tiles still use
