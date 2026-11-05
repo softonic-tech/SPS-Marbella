@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import ContactForm from './ContactForm';
 import PageHero from '@/components/ui/PageHero';
 import { useLanguage } from '@/lib/LanguageContext';
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_TEL, CONTACT_WHATSAPP } from '@/lib/site';
 
 const MAPS_SEARCH_URL = 'https://www.google.com/maps/search/?api=1&query=Marbella%2C+Spain';
 const MAPS_EMBED_URL = 'https://maps.google.com/maps?q=Marbella%2C%20Spain&z=12&output=embed';
@@ -33,11 +33,21 @@ export default function ContactPage() {
               </div>
               <div className="contact-row">
                 <span>Email</span>
-                <strong>{t.contactNote}</strong>
+                <strong>
+                  <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                </strong>
+              </div>
+              <div className="contact-row">
+                <span>Phone</span>
+                <strong>
+                  <a href={`tel:${CONTACT_PHONE_TEL}`}>{CONTACT_PHONE}</a>
+                </strong>
               </div>
               <div className="contact-row">
                 <span>WhatsApp</span>
-                <Link href="#contact-form">{t.contactUs} ↗</Link>
+                <a href={CONTACT_WHATSAPP} target="_blank" rel="noreferrer">
+                  {CONTACT_PHONE} ↗
+                </a>
               </div>
             </div>
           </div>

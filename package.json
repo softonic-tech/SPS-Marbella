@@ -2,11 +2,11 @@
   "name": "sps-marbella",
   "version": "1.0.0",
   "private": true,
-  "description": "SPS Marbella — one vision, four divisions. Next.js App Router rebuild of the approved site.",
+  "description": "SPS Marbella \u2014 one vision, four divisions. Next.js App Router rebuild of the approved site.",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node init && next dev",
+    "build": "node init && next build",
+    "start": "node init && next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },

@@ -18,7 +18,7 @@ type StatusKey = 'mail' | 'success';
 export default function ContactForm() {
   const { t } = useLanguage();
   const f = t.form;
-  const [status, setStatus] = useState<StatusKey>('mail');
+  const [status, setStatus] = useState<StatusKey | null>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +70,7 @@ export default function ContactForm() {
         <span className="arrow">↗</span>
       </button>
       <div className="form-status" aria-live="polite">
-        {f[status]}
+        {status ? f[status] : null}
       </div>
     </form>
   );
