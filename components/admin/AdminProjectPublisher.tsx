@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { CLIENT_PROJECTS, type ClientProject, type ProjectStage } from '@/lib/projects';
-import { STAGE_LABEL } from '@/lib/social/project-posts';
+import { MAX_PROJECT_PHOTOS, STAGE_LABEL } from '@/lib/social/project-posts';
 
 const STAGES: readonly ProjectStage[] = ['before', 'during', 'after', 'photos'];
-const MAX_PHOTOS = 8;
 
 const KIND_LABEL = {
   newBuild: 'New build',
@@ -71,16 +70,55 @@ export default function AdminProjectPublisher({
     setCaption(`${next.name}\n${KIND_LABEL[next.kind]} · ${CATEGORY_LABEL[next.category]}\n\nSPS Marbella`);
   };
 
+  const atLimit = selectedCount >= MAX_PROJECT_PHOTOS;
+
   const toggle = (src: string) => {
-    setSelected((current) => (current.includes(src) ? current.filter((item) => item !== src) : [...current, src]));
+    if (selected.includes(src)) {
+      setSelected((current) => current.filter((item) => item !== src));
+      return;
+    }
+    if (selected.length >= MAX_PROJECT_PHOTOS) {
+      onBanner(
+        'info',
+        'Limit reached',
+        `You can publish up to ${MAX_PROJECT_PHOTOS} photos at a time. Deselect one to add another.`,
+        'idle',
+      );
+      return;
+    }
+    setSelected((current) => [...current, src]);
   };
 
   const toggleStage = () => {
     const sources = stageImages.map((item) => item.src);
-    const allOn = sources.every((src) => selected.includes(src));
-    setSelected((current) =>
-      allOn ? current.filter((src) => !sources.includes(src)) : [...new Set([...current, ...sources])],
-    );
+    const selectedInStage = sources.filter((src) => selected.includes(src));
+    const allOn = sources.length > 0 && selectedInStage.length === sources.length;
+
+    if (allOn) {
+      setSelected((current) => current.filter((src) => !sources.includes(src)));
+      return;
+    }
+
+    const room = MAX_PROJECT_PHOTOS - selected.length;
+    const toAdd = sources.filter((src) => !selected.includes(src)).slice(0, Math.max(room, 0));
+    if (toAdd.length === 0 && room === 0) {
+      onBanner(
+        'info',
+        'Limit reached',
+        `You can publish up to ${MAX_PROJECT_PHOTOS} photos at a time. Deselect one to add another.`,
+        'idle',
+      );
+      return;
+    }
+    if (toAdd.length < sources.filter((src) => !selected.includes(src)).length) {
+      onBanner(
+        'info',
+        'Limit reached',
+        `Added what fits. Maximum is ${MAX_PROJECT_PHOTOS} photos per publish.`,
+        'idle',
+      );
+    }
+    setSelected((current) => [...new Set([...current, ...toAdd])]);
   };
 
   const publish = async () => {
@@ -101,8 +139,8 @@ export default function AdminProjectPublisher({
       onBanner('error', 'Error', 'Select at least one photo.', 'error');
       return;
     }
-    if (selectedCount > MAX_PHOTOS) {
-      onBanner('error', 'Error', `Select up to ${MAX_PHOTOS} photos at a time.`, 'error');
+    if (selectedCount > MAX_PROJECT_PHOTOS) {
+      onBanner('error', 'Error', `Select up to ${MAX_PROJECT_PHOTOS} photos at a time.`, 'error');
       return;
     }
     if (caption.trim().length < 8) {
@@ -157,7 +195,9 @@ export default function AdminProjectPublisher({
     <section className="admin-card">
       <p className="admin-step">Step 2</p>
       <h2>Publish a project</h2>
-      <p className="admin-hint">Choose a project, then select the before, during, after, or photograph shots to post.</p>
+      <p className="admin-hint">
+        Choose a project, then select up to {MAX_PROJECT_PHOTOS} before, during, after, or photograph shots to post.
+      </p>
 
       <div className="admin-projects">
         {CLIENT_PROJECTS.map((item) => (
@@ -202,9 +242,9 @@ export default function AdminProjectPublisher({
             ? 'Clear this stage'
             : 'Select this stage'}
         </button>
-        <span>
-          {selectedCount} selected
-          {selectedCount > MAX_PHOTOS ? ` · maximum ${MAX_PHOTOS}` : ''}
+        <span className={`admin-photo-count ${atLimit ? 'full' : ''}`}>
+          {selectedCount} of {MAX_PROJECT_PHOTOS} selected
+          {atLimit ? ' · limit reached' : ''}
         </span>
       </div>
 
@@ -212,14 +252,16 @@ export default function AdminProjectPublisher({
         {shown.map((item) => {
           const isImage = item.kind === 'image';
           const on = selected.includes(item.src);
+          const locked = isImage && !on && atLimit;
           return (
             <button
               key={item.src}
               type="button"
-              className={`admin-photo ${on ? 'selected' : ''} ${isImage ? '' : 'video'}`}
+              className={`admin-photo ${on ? 'selected' : ''} ${isImage ? '' : 'video'} ${locked ? 'locked' : ''}`}
               onClick={() => isImage && toggle(item.src)}
-              disabled={busy || !isImage}
+              disabled={busy || !isImage || locked}
               aria-pressed={on}
+              title={locked ? `Maximum ${MAX_PROJECT_PHOTOS} photos. Deselect one first.` : undefined}
             >
               {isImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -228,6 +270,7 @@ export default function AdminProjectPublisher({
                 <span className="admin-photo-video">Video</span>
               )}
               {on ? <span className="admin-photo-tick">Selected</span> : null}
+              {locked ? <span className="admin-photo-tick muted">Full</span> : null}
             </button>
           );
         })}

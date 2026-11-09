@@ -1,5 +1,8 @@
 import { CLIENT_PROJECTS, type ClientProject, type ProjectStage } from '@/lib/projects';
 
+/** Max photos in one Facebook / Instagram publish from the admin. */
+export const MAX_PROJECT_PHOTOS = 8;
+
 export const STAGE_LABEL: Record<ProjectStage, string> = {
   before: 'Before',
   during: 'During',

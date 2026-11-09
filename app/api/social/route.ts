@@ -15,7 +15,7 @@ import {
   selectFacebookPage,
   socialStatus,
 } from '@/lib/social/meta';
-import { absoluteAssetUrl, projectById, STAGE_LABEL } from '@/lib/social/project-posts';
+import { absoluteAssetUrl, MAX_PROJECT_PHOTOS, projectById, STAGE_LABEL } from '@/lib/social/project-posts';
 import { listDrafts, readSocial, saveDraft, saveUpload, storageMode, updateDraft, writeSocial } from '@/lib/social/store';
 
 async function requireAdmin() {
@@ -160,8 +160,11 @@ export async function POST(request: Request) {
     if (images.length === 0) {
       return NextResponse.json({ ok: false, error: 'Select at least one project photo.' }, { status: 400 });
     }
-    if (images.length > 8) {
-      return NextResponse.json({ ok: false, error: 'Select up to 8 photos at a time.' }, { status: 400 });
+    if (images.length > MAX_PROJECT_PHOTOS) {
+      return NextResponse.json(
+        { ok: false, error: `Select up to ${MAX_PROJECT_PHOTOS} photos at a time.` },
+        { status: 400 },
+      );
     }
     const caption = String(body.caption || '').trim().slice(0, 2000);
     if (caption.length < 8) {

@@ -462,6 +462,16 @@
   padding: 8px 12px;
 }
 
+.admin-photo-count {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-photo-count.full {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .admin-photos {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -480,6 +490,11 @@
 .admin-photo.selected {
   border-color: var(--ink);
   box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.admin-photo.locked {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .admin-photo img,
@@ -512,6 +527,10 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 4px 6px;
+}
+
+.admin-photo-tick.muted {
+  background: rgba(40, 34, 28, 0.55);
 }
 
 @media (max-width: 800px) {
