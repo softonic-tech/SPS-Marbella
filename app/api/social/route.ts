@@ -15,6 +15,7 @@ import {
   selectFacebookPage,
   socialStatus,
 } from '@/lib/social/meta';
+import { absoluteAssetUrl, projectById, STAGE_LABEL } from '@/lib/social/project-posts';
 import { listDrafts, readSocial, saveDraft, saveUpload, storageMode, updateDraft, writeSocial } from '@/lib/social/store';
 
 async function requireAdmin() {
@@ -147,6 +148,71 @@ export async function POST(request: Request) {
     const next = clearInstagramLogin(await readSocial());
     await writeSocial(next);
     return NextResponse.json(socialStatus(next));
+  }
+
+  if (action === 'publish-project') {
+    const project = projectById(String(body.projectId || '').trim());
+    if (!project) {
+      return NextResponse.json({ ok: false, error: 'Choose one of the site projects.' }, { status: 400 });
+    }
+    const requested = Array.isArray(body.images) ? body.images.map((item) => String(item)) : [];
+    const images = project.media.filter((item) => item.kind === 'image' && requested.includes(item.src));
+    if (images.length === 0) {
+      return NextResponse.json({ ok: false, error: 'Select at least one project photo.' }, { status: 400 });
+    }
+    if (images.length > 8) {
+      return NextResponse.json({ ok: false, error: 'Select up to 8 photos at a time.' }, { status: 400 });
+    }
+    const caption = String(body.caption || '').trim().slice(0, 2000);
+    if (caption.length < 8) {
+      return NextResponse.json({ ok: false, error: 'Write a longer caption.' }, { status: 400 });
+    }
+    const targets = {
+      facebook: body.facebook !== false,
+      instagram: body.instagram === true,
+    };
+    if (!targets.facebook && !targets.instagram) {
+      return NextResponse.json({ ok: false, error: 'Choose Facebook or Instagram.' }, { status: 400 });
+    }
+
+    let config = await readSocial();
+    config = await refreshInstagramTokenIfNeeded(config);
+    await writeSocial(config);
+
+    let posted = 0;
+    let failed = 0;
+    let firstError = '';
+    for (const image of images) {
+      const message = `${caption}\n\n${STAGE_LABEL[image.stage]}`.slice(0, 2200);
+      const imageUrl = absoluteAssetUrl(origin, image.src);
+      let photoOk = true;
+      if (targets.facebook) {
+        const fb = await publishFacebook({ message, image: imageUrl, withPhoto: true }, config);
+        if (!fb.ok) {
+          photoOk = false;
+          if (!firstError) firstError = fb.error;
+        }
+      }
+      if (targets.instagram) {
+        const ig = await publishInstagram({ message, image: imageUrl }, config);
+        if (!ig.ok) {
+          photoOk = false;
+          if (!firstError) firstError = ig.error;
+        }
+      }
+      if (photoOk) posted += 1;
+      else failed += 1;
+    }
+
+    return NextResponse.json(
+      {
+        ok: failed === 0,
+        posted,
+        failed,
+        error: failed ? firstError || `${failed} photo${failed === 1 ? '' : 's'} failed.` : undefined,
+      },
+      { status: failed === 0 ? 200 : 400 },
+    );
   }
 
   if (action === 'publish') {
