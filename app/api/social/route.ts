@@ -147,6 +147,12 @@ export async function POST(request: Request) {
       try {
         const next = await linkInstagramFromFacebookPage(current);
         await writeSocial(next);
+        console.log('[instagram-connect] linked from Facebook Page', {
+          pageId: next.pageId,
+          pageName: next.pageName,
+          instagramUserId: next.instagramUserId,
+          instagramUsername: next.instagramUsername,
+        });
         return NextResponse.json({
           ...socialStatus(next),
           linked: true,
@@ -156,11 +162,15 @@ export async function POST(request: Request) {
           caught instanceof Error
             ? caught.message
             : 'Could not link Instagram from the Facebook Page.';
-        if (!instagramAppReady()) {
-          return NextResponse.json({ ok: false, error: message }, { status: 400 });
-        }
-        // Fall through to Instagram Login when separate app keys are configured.
-        console.warn('[instagram-connect] page link failed, trying Instagram Login:', message);
+        const debug =
+          caught && typeof caught === 'object' && 'debug' in caught
+            ? (caught as { debug?: unknown }).debug
+            : undefined;
+        console.error('[instagram-connect] page link failed', { message, debug });
+        await writeSocial({ ...current, instagramLastError: message });
+        // Do not fall through to Instagram Login when a Page is already connected —
+        // that OAuth path hides the real Graph error (and often fails with developer role).
+        return NextResponse.json({ ok: false, error: message, debug }, { status: 400 });
       }
     }
 

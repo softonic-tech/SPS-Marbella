@@ -185,25 +185,185 @@ export function clearInstagramLogin(config: SocialConfig): SocialConfig {
   };
 }
 
-/** Load the Instagram Business account linked to a Facebook Page. */
-export async function fetchPageInstagramAccount(pageId: string, pageToken: string) {
-  const params = new URLSearchParams({
-    fields: 'instagram_business_account{id,username},connected_instagram_account{id,username}',
-    access_token: pageToken,
-  });
-  const response = await fetch(`${graphBase()}/${encodeURIComponent(pageId)}?${params}`);
-  const data = (await response.json()) as {
-    instagram_business_account?: { id?: string; username?: string };
-    connected_instagram_account?: { id?: string; username?: string };
-    error?: { message?: string };
-  };
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'Could not read Instagram from this Facebook Page.');
-  }
-  const account = data.instagram_business_account || data.connected_instagram_account;
+type InstagramAccountLookup = {
+  id: string;
+  username: string;
+  source: string;
+};
+
+type InstagramLookupDebug = {
+  pageId: string;
+  pageName: string;
+  graph: string;
+  httpStatus?: number;
+  scopes: string[];
+  missingScopes: string[];
+  hasBusinessAccount: boolean;
+  hasConnectedAccount: boolean;
+  rawKeys: string[];
+  graphError?: string;
+  notes: string[];
+};
+
+function mapIgAccount(
+  account: { id?: string; username?: string } | undefined,
+  source: string,
+): InstagramAccountLookup | null {
   const id = String(account?.id || '').trim();
   if (!id) return null;
-  return { id, username: String(account?.username || '').trim() };
+  return { id, username: String(account?.username || '').trim(), source };
+}
+
+async function debugPageTokenScopes(pageToken: string): Promise<string[]> {
+  try {
+    const appToken = `${metaAppId()}|${metaAppSecret()}`;
+    const params = new URLSearchParams({
+      input_token: pageToken,
+      access_token: appToken,
+    });
+    const response = await fetch(`${graphBase()}/debug_token?${params}`);
+    const data = (await response.json()) as {
+      data?: { scopes?: string[]; granular_scopes?: { scope?: string }[]; is_valid?: boolean };
+      error?: { message?: string };
+    };
+    if (!response.ok || data.error) {
+      console.warn('[instagram] debug_token failed:', data.error?.message || response.status);
+      return [];
+    }
+    const scopes = new Set<string>();
+    for (const scope of data.data?.scopes || []) scopes.add(scope);
+    for (const row of data.data?.granular_scopes || []) {
+      if (row.scope) scopes.add(row.scope);
+    }
+    console.log('[instagram] page token valid=', data.data?.is_valid, 'scopes=', [...scopes].join(','));
+    return [...scopes];
+  } catch (caught) {
+    console.warn('[instagram] debug_token error:', caught instanceof Error ? caught.message : caught);
+    return [];
+  }
+}
+
+/** Load the Instagram Business account linked to a Facebook Page. */
+export async function fetchPageInstagramAccount(
+  pageId: string,
+  pageToken: string,
+  options?: { pageName?: string; userToken?: string },
+): Promise<{ account: InstagramAccountLookup | null; debug: InstagramLookupDebug }> {
+  const needed = ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'];
+  const notes: string[] = [];
+  const scopes = await debugPageTokenScopes(pageToken);
+  const missingScopes = needed.filter((scope) => !scopes.includes(scope));
+  if (missingScopes.length) {
+    notes.push(`Page token is missing scopes: ${missingScopes.join(', ')}. Disconnect and Connect Facebook again.`);
+  }
+
+  const params = new URLSearchParams({
+    fields: 'id,name,instagram_business_account{id,username},connected_instagram_account{id,username}',
+    access_token: pageToken,
+  });
+  const url = `${graphBase()}/${encodeURIComponent(pageId)}?${params}`;
+  console.log('[instagram] lookup page', {
+    pageId,
+    pageName: options?.pageName || '',
+    graph: graphBase(),
+    hasUserToken: Boolean(options?.userToken),
+  });
+
+  const response = await fetch(url);
+  const data = (await response.json()) as {
+    id?: string;
+    name?: string;
+    instagram_business_account?: { id?: string; username?: string };
+    connected_instagram_account?: { id?: string; username?: string };
+    error?: { message?: string; code?: number; type?: string; error_subcode?: number };
+  };
+
+  console.log('[instagram] page graph response', {
+    httpStatus: response.status,
+    pageId: data.id || pageId,
+    pageName: data.name || options?.pageName || '',
+    hasBusinessAccount: Boolean(data.instagram_business_account?.id),
+    hasConnectedAccount: Boolean(data.connected_instagram_account?.id),
+    business: data.instagram_business_account || null,
+    connected: data.connected_instagram_account || null,
+    error: data.error || null,
+    keys: Object.keys(data),
+  });
+
+  const debug: InstagramLookupDebug = {
+    pageId: String(data.id || pageId),
+    pageName: String(data.name || options?.pageName || ''),
+    graph: graphBase(),
+    httpStatus: response.status,
+    scopes,
+    missingScopes,
+    hasBusinessAccount: Boolean(data.instagram_business_account?.id),
+    hasConnectedAccount: Boolean(data.connected_instagram_account?.id),
+    rawKeys: Object.keys(data),
+    graphError: data.error
+      ? `${data.error.message || 'Graph error'}${data.error.code ? ` (code ${data.error.code})` : ''}`
+      : undefined,
+    notes,
+  };
+
+  if (!response.ok || data.error) {
+    throw Object.assign(
+      new Error(data.error?.message || 'Could not read Instagram from this Facebook Page.'),
+      { debug },
+    );
+  }
+
+  let account =
+    mapIgAccount(data.instagram_business_account, 'instagram_business_account') ||
+    mapIgAccount(data.connected_instagram_account, 'connected_instagram_account');
+
+  // Fallback: ask /me/accounts with the user token (sometimes exposes IG when the page call does not).
+  if (!account && options?.userToken) {
+    notes.push('Page lookup returned no Instagram fields; tried /me/accounts with the user token.');
+    const accountsParams = new URLSearchParams({
+      fields: 'id,name,access_token,instagram_business_account{id,username},connected_instagram_account{id,username}',
+      access_token: options.userToken,
+    });
+    const accountsRes = await fetch(`${graphBase()}/me/accounts?${accountsParams}`);
+    const accountsData = (await accountsRes.json()) as {
+      data?: {
+        id?: string;
+        name?: string;
+        instagram_business_account?: { id?: string; username?: string };
+        connected_instagram_account?: { id?: string; username?: string };
+      }[];
+      error?: { message?: string };
+    };
+    console.log('[instagram] me/accounts fallback', {
+      httpStatus: accountsRes.status,
+      error: accountsData.error || null,
+      pages: (accountsData.data || []).map((page) => ({
+        id: page.id,
+        name: page.name,
+        hasBusinessAccount: Boolean(page.instagram_business_account?.id),
+        hasConnectedAccount: Boolean(page.connected_instagram_account?.id),
+        business: page.instagram_business_account || null,
+        connected: page.connected_instagram_account || null,
+      })),
+    });
+    const match = (accountsData.data || []).find((page) => String(page.id || '') === pageId);
+    account =
+      mapIgAccount(match?.instagram_business_account, 'me/accounts.instagram_business_account') ||
+      mapIgAccount(match?.connected_instagram_account, 'me/accounts.connected_instagram_account');
+    debug.hasBusinessAccount = Boolean(match?.instagram_business_account?.id);
+    debug.hasConnectedAccount = Boolean(match?.connected_instagram_account?.id);
+  }
+
+  if (!account) {
+    notes.push(
+      'Graph returned no instagram_business_account. Business Suite “connected assets” is not enough unless Instagram is Professional (Business/Creator) and granted to this app.',
+    );
+  } else {
+    console.log('[instagram] found account', account);
+  }
+
+  debug.notes = notes;
+  return { account, debug };
 }
 
 /** Attach the Page's Instagram Business account using the Page access token. */
@@ -213,12 +373,30 @@ export async function linkInstagramFromFacebookPage(config: SocialConfig): Promi
   if (!pageId || !pageToken) {
     throw new Error('Connect Facebook and choose a Page first.');
   }
-  const account = await fetchPageInstagramAccount(pageId, pageToken);
+
+  const { account, debug } = await fetchPageInstagramAccount(pageId, pageToken, {
+    pageName: config.pageName,
+    userToken: config.facebookUserToken,
+  });
+
   if (!account) {
-    throw new Error(
-      'This Facebook Page has no linked Instagram Business account. In Meta Business Suite, link the Instagram account to the Page, then Connect Instagram again.',
+    const detailParts = [
+      `Page ${debug.pageName || debug.pageId} (${debug.pageId})`,
+      `graph ${debug.graph}`,
+      debug.missingScopes.length ? `missing scopes: ${debug.missingScopes.join(', ')}` : '',
+      debug.hasBusinessAccount ? 'business account field present' : 'no instagram_business_account',
+      debug.hasConnectedAccount ? 'connected account field present' : 'no connected_instagram_account',
+      ...debug.notes,
+    ].filter(Boolean);
+    const error = Object.assign(
+      new Error(
+        `This Facebook Page has no Instagram Business account visible to the app. ${detailParts.join(' · ')}`,
+      ),
+      { debug },
     );
+    throw error;
   }
+
   return {
     ...config,
     instagramUserId: account.id,

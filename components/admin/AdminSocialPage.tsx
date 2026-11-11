@@ -158,6 +158,14 @@ export default function AdminSocialPage() {
         url?: string;
         linked?: boolean;
         error?: string;
+        debug?: {
+          pageId?: string;
+          pageName?: string;
+          missingScopes?: string[];
+          hasBusinessAccount?: boolean;
+          hasConnectedAccount?: boolean;
+          notes?: string[];
+        };
       };
       if (response.status === 401) {
         setAuthed(false);
@@ -165,7 +173,28 @@ export default function AdminSocialPage() {
         return;
       }
       if (!response.ok || !data.ok) {
-        showBanner('error', 'Error', data.error || 'Could not start connect.', 'error');
+        const debugBits = data.debug
+          ? [
+              data.debug.pageName || data.debug.pageId
+                ? `Page: ${data.debug.pageName || ''} ${data.debug.pageId || ''}`.trim()
+                : '',
+              data.debug.missingScopes?.length
+                ? `Missing scopes: ${data.debug.missingScopes.join(', ')}`
+                : '',
+              data.debug.hasBusinessAccount === false ? 'No instagram_business_account from Graph' : '',
+              data.debug.hasConnectedAccount === false ? 'No connected_instagram_account from Graph' : '',
+              ...(data.debug.notes || []),
+            ]
+              .filter(Boolean)
+              .join(' | ')
+          : '';
+        console.error('[admin] connect failed', data.error, data.debug);
+        showBanner(
+          'error',
+          'Error',
+          [data.error || 'Could not start connect.', debugBits].filter(Boolean).join('\n'),
+          'error',
+        );
         return;
       }
       // Instagram linked from the Facebook Page — no browser redirect.
