@@ -158,7 +158,14 @@ export default function AdminProjectPublisher({
       return;
     }
 
-    onBanner('working', 'Publishing', `Publishing ${selectedCount} photo${selectedCount === 1 ? '' : 's'}…`, 'posting');
+    onBanner(
+      'working',
+      'Publishing',
+      selectedCount > 1
+        ? `Publishing 1 carousel with ${selectedCount} photos…`
+        : 'Publishing 1 photo…',
+      'posting',
+    );
     try {
       const response = await fetch('/api/social', {
         method: 'POST',
@@ -178,6 +185,8 @@ export default function AdminProjectPublisher({
         error?: string;
         posted?: number;
         failed?: number;
+        photoCount?: number;
+        mode?: string;
       };
       if (response.status === 401) {
         onBanner('error', 'Error', 'Session expired. Sign in again.', 'error');
@@ -192,7 +201,15 @@ export default function AdminProjectPublisher({
         );
         return;
       }
-      onBanner('success', 'Published', `Published ${result.posted ?? selectedCount} photo${(result.posted ?? selectedCount) === 1 ? '' : 's'}.`, 'posted');
+      const count = result.photoCount ?? selectedCount;
+      onBanner(
+        'success',
+        'Published',
+        count > 1
+          ? `Published 1 carousel with ${count} photos.`
+          : 'Published 1 photo.',
+        'posted',
+      );
       setSelected([]);
     } catch {
       onBanner('error', 'Error', 'Could not reach the publisher.', 'error');
@@ -206,7 +223,8 @@ export default function AdminProjectPublisher({
       <p className="admin-step">Step 2</p>
       <h2>Publish a project</h2>
       <p className="admin-hint">
-        Choose a project, then select up to {MAX_PROJECT_PHOTOS} before, during, after, or photograph shots to post.
+        Choose a project, then select up to {MAX_PROJECT_PHOTOS} shots. Multiple photos publish as one carousel post on
+        Facebook and Instagram.
       </p>
 
       <div className="admin-projects">
@@ -315,7 +333,13 @@ export default function AdminProjectPublisher({
 
       <div className="admin-actions">
         <button type="button" className="admin-btn wide" disabled={busy || selectedCount === 0} onClick={() => void publish()}>
-          {busy ? 'Publishing…' : selectedCount ? `Publish ${selectedCount} photo${selectedCount === 1 ? '' : 's'}` : 'Publish photos'}
+          {busy
+            ? 'Publishing…'
+            : selectedCount > 1
+              ? `Publish carousel (${selectedCount} photos)`
+              : selectedCount === 1
+                ? 'Publish 1 photo'
+                : 'Publish photos'}
         </button>
       </div>
       {!facebookConnected && !instagramConnected ? (

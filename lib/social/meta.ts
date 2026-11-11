@@ -901,8 +901,15 @@ async function waitForInstagramContainer(creationId: string, accessToken: string
   throw new Error('Instagram is still processing the photo. Try again in a moment.');
 }
 
+function normalizeImageUrls(input: { image?: string; images?: string[] }) {
+  const fromList = (input.images || []).map((item) => item.trim()).filter((item) => /^https:\/\//i.test(item));
+  if (fromList.length) return fromList.slice(0, 10);
+  const single = (input.image || '').trim();
+  return /^https:\/\//i.test(single) ? [single] : [];
+}
+
 export async function publishFacebook(
-  input: { message: string; image?: string; link?: string; withPhoto?: boolean },
+  input: { message: string; image?: string; images?: string[]; link?: string; withPhoto?: boolean },
   config: SocialConfig,
 ) {
   const creds = resolveFacebookCreds(config);
@@ -914,8 +921,59 @@ export async function publishFacebook(
   if (message.length < 8) return { ok: false as const, error: 'Write a longer post before publishing.' };
 
   const link = (input.link || '').trim().slice(0, 500);
-  const image = (input.image || '').trim().slice(0, 1000);
-  const withPhoto = input.withPhoto !== false && /^https:\/\//i.test(image);
+  const images = normalizeImageUrls(input);
+  const withPhoto = input.withPhoto !== false && images.length > 0;
+
+  // Multi-photo Page post: upload unpublished photos, then one feed post with attached_media.
+  if (withPhoto && images.length > 1) {
+    const mediaIds: string[] = [];
+    for (const imageUrl of images) {
+      const uploadBody = new URLSearchParams({
+        url: imageUrl,
+        published: 'false',
+        access_token: creds.pageToken,
+      });
+      const uploadRes = await fetch(`${graphBase()}/${encodeURIComponent(creds.pageId)}/photos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: uploadBody,
+      });
+      const uploadData = (await uploadRes.json()) as { id?: string; error?: { message?: string } };
+      if (!uploadRes.ok || uploadData.error || !uploadData.id) {
+        return {
+          ok: false as const,
+          error: uploadData.error?.message || `Facebook photo upload failed (${uploadRes.status}).`,
+        };
+      }
+      mediaIds.push(uploadData.id);
+    }
+
+    const feedBody = new URLSearchParams();
+    feedBody.set('message', message);
+    feedBody.set('access_token', creds.pageToken);
+    mediaIds.forEach((id, index) => {
+      feedBody.set(`attached_media[${index}]`, JSON.stringify({ media_fbid: id }));
+    });
+    const feedRes = await fetch(`${graphBase()}/${encodeURIComponent(creds.pageId)}/feed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: feedBody,
+    });
+    const feedData = (await feedRes.json()) as { id?: string; post_id?: string; error?: { message?: string } };
+    if (!feedRes.ok || feedData.error) {
+      return {
+        ok: false as const,
+        error: feedData.error?.message || `Facebook carousel post failed (${feedRes.status}).`,
+      };
+    }
+    return {
+      ok: true as const,
+      id: feedData.id || feedData.post_id || '',
+      mode: 'carousel',
+      pageName: creds.pageName,
+      photoCount: mediaIds.length,
+    };
+  }
 
   const endpoint = withPhoto
     ? `${graphBase()}/${encodeURIComponent(creds.pageId)}/photos`
@@ -924,7 +982,7 @@ export async function publishFacebook(
   const body = new URLSearchParams();
   body.set('access_token', creds.pageToken);
   if (withPhoto) {
-    body.set('url', image);
+    body.set('url', images[0]);
     body.set('caption', message);
   } else {
     body.set('message', message);
@@ -945,11 +1003,12 @@ export async function publishFacebook(
     id: data.id || data.post_id || '',
     mode: withPhoto ? 'photo' : 'feed',
     pageName: creds.pageName,
+    photoCount: withPhoto ? 1 : 0,
   };
 }
 
 export async function publishInstagram(
-  input: { message: string; image: string },
+  input: { message: string; image?: string; images?: string[] },
   config: SocialConfig,
 ) {
   const ig = resolveInstagram(config);
@@ -963,16 +1022,101 @@ export async function publishInstagram(
   const message = input.message.trim().slice(0, 2200);
   if (message.length < 8) return { ok: false as const, error: 'Write a longer caption before publishing.' };
 
-  const image = input.image.trim().slice(0, 1000);
-  if (!/^https:\/\//i.test(image)) {
+  const images = normalizeImageUrls(input);
+  if (!images.length) {
     return {
       ok: false as const,
       error: 'Instagram requires a public https image URL. Publish from the live site so Meta can fetch the photo.',
     };
   }
 
+  // Carousel: child containers → CAROUSEL container → publish once.
+  if (images.length > 1) {
+    const childIds: string[] = [];
+    for (const imageUrl of images) {
+      const childBody = new URLSearchParams({
+        image_url: imageUrl,
+        is_carousel_item: 'true',
+        access_token: ig.accessToken,
+      });
+      const childRes = await fetch(`${ig.apiBase}/${encodeURIComponent(ig.userId)}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: childBody,
+      });
+      const childData = (await childRes.json()) as { id?: string; error?: { message?: string } };
+      if (!childRes.ok || childData.error || !childData.id) {
+        return {
+          ok: false as const,
+          error: childData.error?.message || `Instagram carousel item failed (${childRes.status}).`,
+        };
+      }
+      try {
+        await waitForInstagramContainer(childData.id, ig.accessToken, ig.apiBase);
+      } catch (caught) {
+        return {
+          ok: false as const,
+          error: caught instanceof Error ? caught.message : 'Instagram carousel item processing failed.',
+        };
+      }
+      childIds.push(childData.id);
+    }
+
+    const carouselBody = new URLSearchParams({
+      media_type: 'CAROUSEL',
+      children: childIds.join(','),
+      caption: message,
+      access_token: ig.accessToken,
+    });
+    const carouselRes = await fetch(`${ig.apiBase}/${encodeURIComponent(ig.userId)}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: carouselBody,
+    });
+    const carouselData = (await carouselRes.json()) as { id?: string; error?: { message?: string } };
+    if (!carouselRes.ok || carouselData.error || !carouselData.id) {
+      return {
+        ok: false as const,
+        error: carouselData.error?.message || `Instagram carousel create failed (${carouselRes.status}).`,
+      };
+    }
+    try {
+      await waitForInstagramContainer(carouselData.id, ig.accessToken, ig.apiBase);
+    } catch (caught) {
+      return {
+        ok: false as const,
+        error: caught instanceof Error ? caught.message : 'Instagram carousel processing failed.',
+      };
+    }
+
+    const publishBody = new URLSearchParams({
+      creation_id: carouselData.id,
+      access_token: ig.accessToken,
+    });
+    const publishRes = await fetch(`${ig.apiBase}/${encodeURIComponent(ig.userId)}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: publishBody,
+    });
+    const publishData = (await publishRes.json()) as { id?: string; error?: { message?: string } };
+    if (!publishRes.ok || publishData.error) {
+      return {
+        ok: false as const,
+        error: publishData.error?.message || `Instagram carousel publish failed (${publishRes.status}).`,
+      };
+    }
+    return {
+      ok: true as const,
+      id: publishData.id || '',
+      mode: 'carousel',
+      username: ig.username,
+      via: ig.mode,
+      photoCount: childIds.length,
+    };
+  }
+
   const createBody = new URLSearchParams({
-    image_url: image,
+    image_url: images[0],
     caption: message,
     access_token: ig.accessToken,
   });
@@ -1021,5 +1165,6 @@ export async function publishInstagram(
     mode: 'photo',
     username: ig.username,
     via: ig.mode,
+    photoCount: 1,
   };
 }

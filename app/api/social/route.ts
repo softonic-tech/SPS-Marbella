@@ -246,39 +246,38 @@ export async function POST(request: Request) {
     config = await refreshInstagramTokenIfNeeded(config);
     await writeSocial(config);
 
-    let posted = 0;
-    let failed = 0;
+    const stages = [...new Set(images.map((image) => STAGE_LABEL[image.stage]))];
+    const message = `${caption}\n\n${stages.join(' · ')}`.slice(0, 2200);
+    const imageUrls = images.map((image) => absoluteAssetUrl(origin, image.src));
+
     let firstError = '';
-    for (const image of images) {
-      const message = `${caption}\n\n${STAGE_LABEL[image.stage]}`.slice(0, 2200);
-      const imageUrl = absoluteAssetUrl(origin, image.src);
-      let photoOk = true;
-      if (targets.facebook) {
-        const fb = await publishFacebook({ message, image: imageUrl, withPhoto: true }, config);
-        if (!fb.ok) {
-          photoOk = false;
-          if (!firstError) firstError = fb.error;
-        }
-      }
-      if (targets.instagram) {
-        const ig = await publishInstagram({ message, image: imageUrl }, config);
-        if (!ig.ok) {
-          photoOk = false;
-          if (!firstError) firstError = ig.error;
-        }
-      }
-      if (photoOk) posted += 1;
-      else failed += 1;
+    let facebookOk = !targets.facebook;
+    let instagramOk = !targets.instagram;
+
+    if (targets.facebook) {
+      const fb = await publishFacebook({ message, images: imageUrls, withPhoto: true }, config);
+      facebookOk = fb.ok;
+      if (!fb.ok && !firstError) firstError = fb.error;
+    }
+    if (targets.instagram) {
+      const ig = await publishInstagram({ message, images: imageUrls }, config);
+      instagramOk = ig.ok;
+      if (!ig.ok && !firstError) firstError = ig.error;
     }
 
+    const ok = facebookOk && instagramOk;
     return NextResponse.json(
       {
-        ok: failed === 0,
-        posted,
-        failed,
-        error: failed ? firstError || `${failed} photo${failed === 1 ? '' : 's'} failed.` : undefined,
+        ok,
+        posted: ok ? 1 : 0,
+        failed: ok ? 0 : 1,
+        photoCount: images.length,
+        mode: images.length > 1 ? 'carousel' : 'photo',
+        error: ok
+          ? undefined
+          : firstError || 'Could not publish the post.',
       },
-      { status: failed === 0 ? 200 : 400 },
+      { status: ok ? 200 : 400 },
     );
   }
 
