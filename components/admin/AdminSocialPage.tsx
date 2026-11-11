@@ -213,6 +213,14 @@ export default function AdminSocialPage() {
         showBanner('error', 'Error', data.error || 'Could not start connect.', 'error');
         return;
       }
+      if (network === 'instagram' && (data as { reauth?: boolean }).reauth) {
+        showBanner(
+          'working',
+          'Reconnect Facebook',
+          'Opening Facebook again so Instagram publish permissions can be granted…',
+          'connecting',
+        );
+      }
       window.location.href = data.url;
     } catch {
       showBanner('error', 'Error', 'Could not start connect.', 'error');

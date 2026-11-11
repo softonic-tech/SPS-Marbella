@@ -18,14 +18,17 @@ import {
 import type { FacebookPage, SocialConfig } from './types';
 import { emptySocialConfig } from './types';
 
-const FB_SCOPES = [
+/** Page posting scopes — keep Facebook Connect reliable. */
+const FB_PAGE_SCOPES = [
   'public_profile',
   'pages_show_list',
   'pages_read_engagement',
   'pages_manage_posts',
-  'instagram_basic',
-  'instagram_content_publish',
 ].join(',');
+
+/** Extra scopes needed so Graph can see / publish the Page's Instagram. */
+const FB_INSTAGRAM_SCOPES = ['instagram_basic', 'instagram_content_publish'].join(',');
+
 const IG_SCOPES = [
   'instagram_business_basic',
   'instagram_business_content_publish',
@@ -73,16 +76,34 @@ export function instagramDataDeletionUri(origin?: string) {
   return `${publicOrigin(origin)}/api/instagram-data-deletion`;
 }
 
-export function buildFacebookAuthUrl(origin: string, state: string) {
+export function buildFacebookAuthUrl(
+  origin: string,
+  state: string,
+  options?: { withInstagram?: boolean },
+) {
   const params = new URLSearchParams({
     client_id: metaAppId(),
     redirect_uri: facebookRedirectUri(origin),
     state,
     response_type: 'code',
+    // Force the permission dialog so previously declined Page access can be granted again.
+    auth_type: 'rerequest',
   });
   const configId = env('META_LOGIN_CONFIG_ID');
-  if (configId) params.set('config_id', configId);
-  else params.set('scope', FB_SCOPES);
+  if (configId) {
+    // Unified Login config replaces scope — config must include Page + Instagram permissions.
+    params.set('config_id', configId);
+  } else {
+    const scopes = options?.withInstagram
+      ? `${FB_PAGE_SCOPES},${FB_INSTAGRAM_SCOPES}`
+      : FB_PAGE_SCOPES;
+    params.set('scope', scopes);
+  }
+  console.log('[facebook] authorize', {
+    hasConfigId: Boolean(configId),
+    withInstagram: Boolean(options?.withInstagram),
+    scope: params.get('scope') || '(config_id)',
+  });
   return `${dialogBase()}?${params}`;
 }
 
@@ -490,6 +511,14 @@ function mapPages(rows: { id?: string; name?: string; access_token?: string }[] 
 }
 
 export async function fetchFacebookPages(userToken: string): Promise<FacebookPage[]> {
+  const scopes = await debugPageTokenScopes(userToken);
+  const needed = ['pages_show_list', 'pages_manage_posts'];
+  const missing = needed.filter((scope) => !scopes.includes(scope));
+  console.log('[facebook] me/accounts lookup', {
+    scopes,
+    missing,
+  });
+
   const params = new URLSearchParams({
     fields: 'id,name,access_token',
     access_token: userToken,
@@ -499,6 +528,11 @@ export async function fetchFacebookPages(userToken: string): Promise<FacebookPag
     data?: { id?: string; name?: string; access_token?: string }[];
     error?: { message?: string };
   };
+  console.log('[facebook] me/accounts response', {
+    httpStatus: response.status,
+    pageCount: data.data?.length ?? 0,
+    error: data.error || null,
+  });
   if (response.ok && !data.error) {
     const pages = mapPages(data.data);
     if (pages.length > 0) return pages;
@@ -513,12 +547,22 @@ export async function fetchFacebookPages(userToken: string): Promise<FacebookPag
     accounts?: { data?: { id?: string; name?: string; access_token?: string }[] };
     error?: { message?: string };
   };
+  console.log('[facebook] me accounts nested', {
+    httpStatus: nestedRes.status,
+    pageCount: nestedData.accounts?.data?.length ?? 0,
+    error: nestedData.error || null,
+  });
   const pages = mapPages(nestedData.accounts?.data);
   if (pages.length > 0) return pages;
 
   const message = data.error?.message || nestedData.error?.message || 'Could not load Facebook Pages.';
+  const scopeHint = missing.length
+    ? ` Missing scopes on this login: ${missing.join(', ')}.`
+    : scopes.length
+      ? ` Granted scopes: ${scopes.join(', ')}.`
+      : '';
   throw new Error(
-    `${message} Grant Page access (pages_show_list / pages_manage_posts) and make sure this user is a Page admin.`,
+    `${message} Grant Page access (pages_show_list / pages_manage_posts) and make sure this Facebook user is a Page admin.${scopeHint} Disconnect Facebook, Connect again, and accept Page access.`,
   );
 }
 

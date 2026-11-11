@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { isAdminAuthenticated } from '@/lib/social/auth';
-import { facebookAppReady, instagramAppReady, publicOrigin } from '@/lib/social/env';
+import { env, facebookAppReady, instagramAppReady, publicOrigin } from '@/lib/social/env';
 import {
   buildFacebookAuthUrl,
   buildInstagramAuthUrl,
@@ -164,12 +164,28 @@ export async function POST(request: Request) {
             : 'Could not link Instagram from the Facebook Page.';
         const debug =
           caught && typeof caught === 'object' && 'debug' in caught
-            ? (caught as { debug?: unknown }).debug
+            ? (caught as {
+                debug?: { missingScopes?: string[] };
+              }).debug
             : undefined;
         console.error('[instagram-connect] page link failed', { message, debug });
         await writeSocial({ ...current, instagramLastError: message });
-        // Do not fall through to Instagram Login when a Page is already connected —
-        // that OAuth path hides the real Graph error (and often fails with developer role).
+
+        const missing = debug?.missingScopes || [];
+        const needsInstagramScopes =
+          missing.includes('instagram_basic') || missing.includes('instagram_content_publish');
+        // Re-run Facebook Login with Page + Instagram scopes (no META_LOGIN_CONFIG_ID).
+        if (needsInstagramScopes && !env('META_LOGIN_CONFIG_ID')) {
+          const state = createOAuthState();
+          return NextResponse.json({
+            ok: true,
+            url: buildFacebookAuthUrl(origin, state, { withInstagram: true }),
+            reauth: true,
+            error: message,
+            debug,
+          });
+        }
+
         return NextResponse.json({ ok: false, error: message, debug }, { status: 400 });
       }
     }
