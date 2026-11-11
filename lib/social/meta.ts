@@ -24,6 +24,7 @@ const FB_PAGE_SCOPES = [
   'pages_show_list',
   'pages_read_engagement',
   'pages_manage_posts',
+  'business_management',
 ].join(',');
 
 /** Extra scopes needed so Graph can see / publish the Page's Instagram. */
@@ -235,33 +236,126 @@ function mapIgAccount(
   return { id, username: String(account?.username || '').trim(), source };
 }
 
+type TokenDebugInfo = {
+  scopes: string[];
+  pageTargetIds: string[];
+  isValid: boolean;
+};
+
 async function debugPageTokenScopes(pageToken: string): Promise<string[]> {
+  const info = await debugAccessToken(pageToken);
+  return info.scopes;
+}
+
+async function debugAccessToken(accessToken: string): Promise<TokenDebugInfo> {
   try {
     const appToken = `${metaAppId()}|${metaAppSecret()}`;
     const params = new URLSearchParams({
-      input_token: pageToken,
+      input_token: accessToken,
       access_token: appToken,
     });
     const response = await fetch(`${graphBase()}/debug_token?${params}`);
     const data = (await response.json()) as {
-      data?: { scopes?: string[]; granular_scopes?: { scope?: string }[]; is_valid?: boolean };
+      data?: {
+        scopes?: string[];
+        granular_scopes?: { scope?: string; target_ids?: string[] }[];
+        is_valid?: boolean;
+      };
       error?: { message?: string };
     };
     if (!response.ok || data.error) {
-      console.warn('[instagram] debug_token failed:', data.error?.message || response.status);
-      return [];
+      console.warn('[facebook] debug_token failed:', data.error?.message || response.status);
+      return { scopes: [], pageTargetIds: [], isValid: false };
     }
     const scopes = new Set<string>();
+    const pageTargetIds = new Set<string>();
     for (const scope of data.data?.scopes || []) scopes.add(scope);
     for (const row of data.data?.granular_scopes || []) {
       if (row.scope) scopes.add(row.scope);
+      if (
+        row.scope === 'pages_show_list' ||
+        row.scope === 'pages_manage_posts' ||
+        row.scope === 'pages_read_engagement'
+      ) {
+        for (const id of row.target_ids || []) {
+          if (id) pageTargetIds.add(String(id));
+        }
+      }
     }
-    console.log('[instagram] page token valid=', data.data?.is_valid, 'scopes=', [...scopes].join(','));
-    return [...scopes];
+    console.log('[facebook] token valid=', data.data?.is_valid, {
+      scopes: [...scopes],
+      pageTargetIds: [...pageTargetIds],
+    });
+    return {
+      scopes: [...scopes],
+      pageTargetIds: [...pageTargetIds],
+      isValid: Boolean(data.data?.is_valid),
+    };
   } catch (caught) {
-    console.warn('[instagram] debug_token error:', caught instanceof Error ? caught.message : caught);
-    return [];
+    console.warn('[facebook] debug_token error:', caught instanceof Error ? caught.message : caught);
+    return { scopes: [], pageTargetIds: [], isValid: false };
   }
+}
+
+async function fetchPageById(pageId: string, userToken: string): Promise<FacebookPage | null> {
+  const params = new URLSearchParams({
+    fields: 'id,name,access_token',
+    access_token: userToken,
+  });
+  const response = await fetch(`${graphBase()}/${encodeURIComponent(pageId)}?${params}`);
+  const data = (await response.json()) as {
+    id?: string;
+    name?: string;
+    access_token?: string;
+    error?: { message?: string };
+  };
+  if (!response.ok || data.error || !data.id || !data.access_token) {
+    console.warn('[facebook] page by id failed', pageId, data.error?.message || response.status);
+    return null;
+  }
+  return {
+    id: String(data.id),
+    name: String(data.name || 'Page'),
+    accessToken: String(data.access_token),
+  };
+}
+
+async function fetchBusinessPages(userToken: string): Promise<FacebookPage[]> {
+  const businessesRes = await fetch(
+    `${graphBase()}/me/businesses?fields=id,name&access_token=${encodeURIComponent(userToken)}`,
+  );
+  const businessesData = (await businessesRes.json()) as {
+    data?: { id?: string; name?: string }[];
+    error?: { message?: string };
+  };
+  console.log('[facebook] me/businesses', {
+    httpStatus: businessesRes.status,
+    count: businessesData.data?.length ?? 0,
+    error: businessesData.error || null,
+  });
+  if (!businessesRes.ok || businessesData.error) return [];
+
+  const pages: FacebookPage[] = [];
+  for (const business of businessesData.data || []) {
+    const businessId = String(business.id || '').trim();
+    if (!businessId) continue;
+    for (const edge of ['owned_pages', 'client_pages'] as const) {
+      const edgeRes = await fetch(
+        `${graphBase()}/${encodeURIComponent(businessId)}/${edge}?fields=id,name,access_token&access_token=${encodeURIComponent(userToken)}`,
+      );
+      const edgeData = (await edgeRes.json()) as {
+        data?: { id?: string; name?: string; access_token?: string }[];
+        error?: { message?: string };
+      };
+      console.log(`[facebook] business ${businessId} ${edge}`, {
+        httpStatus: edgeRes.status,
+        count: edgeData.data?.length ?? 0,
+        error: edgeData.error || null,
+      });
+      pages.push(...mapPages(edgeData.data));
+    }
+  }
+  return pages;
 }
 
 /** Load the Instagram Business account linked to a Facebook Page. */
@@ -511,16 +605,19 @@ function mapPages(rows: { id?: string; name?: string; access_token?: string }[] 
 }
 
 export async function fetchFacebookPages(userToken: string): Promise<FacebookPage[]> {
-  const scopes = await debugPageTokenScopes(userToken);
+  const tokenInfo = await debugAccessToken(userToken);
+  const scopes = tokenInfo.scopes;
   const needed = ['pages_show_list', 'pages_manage_posts'];
   const missing = needed.filter((scope) => !scopes.includes(scope));
-  console.log('[facebook] me/accounts lookup', {
+  console.log('[facebook] page discovery', {
     scopes,
     missing,
+    pageTargetIds: tokenInfo.pageTargetIds,
   });
 
   const params = new URLSearchParams({
     fields: 'id,name,access_token',
+    limit: '100',
     access_token: userToken,
   });
   const response = await fetch(`${graphBase()}/me/accounts?${params}`);
@@ -552,8 +649,33 @@ export async function fetchFacebookPages(userToken: string): Promise<FacebookPag
     pageCount: nestedData.accounts?.data?.length ?? 0,
     error: nestedData.error || null,
   });
-  const pages = mapPages(nestedData.accounts?.data);
-  if (pages.length > 0) return pages;
+  const nestedPages = mapPages(nestedData.accounts?.data);
+  if (nestedPages.length > 0) return nestedPages;
+
+  // Granular Page permissions: Meta may grant specific page IDs without listing them in /me/accounts.
+  if (tokenInfo.pageTargetIds.length > 0) {
+    const fromTargets: FacebookPage[] = [];
+    for (const pageId of tokenInfo.pageTargetIds) {
+      const page = await fetchPageById(pageId, userToken);
+      if (page) fromTargets.push(page);
+    }
+    console.log('[facebook] pages from granular target_ids', fromTargets.length);
+    if (fromTargets.length > 0) return fromTargets;
+  }
+
+  // Business Manager owned / client pages.
+  const businessPages = await fetchBusinessPages(userToken);
+  if (businessPages.length > 0) return businessPages;
+
+  // Optional hard-coded Page id from env (useful when Business Suite owns the Page).
+  const envPageId = env('FACEBOOK_PAGE_ID');
+  if (envPageId) {
+    const envPage = await fetchPageById(envPageId, userToken);
+    if (envPage) {
+      console.log('[facebook] loaded FACEBOOK_PAGE_ID from env', envPage.id, envPage.name);
+      return [envPage];
+    }
+  }
 
   const message = data.error?.message || nestedData.error?.message || 'Could not load Facebook Pages.';
   const scopeHint = missing.length
@@ -562,7 +684,7 @@ export async function fetchFacebookPages(userToken: string): Promise<FacebookPag
       ? ` Granted scopes: ${scopes.join(', ')}.`
       : '';
   throw new Error(
-    `${message} Grant Page access (pages_show_list / pages_manage_posts) and make sure this Facebook user is a Page admin.${scopeHint} Disconnect Facebook, Connect again, and accept Page access.`,
+    `${message} Scopes look fine, but Graph returned 0 Pages for this Facebook user.${scopeHint} In Meta Business Suite → Users, assign this Facebook profile Full control on the SPS Marbella Page, then Connect Facebook again. You can also set FACEBOOK_PAGE_ID=1437959159402529 on the host.`,
   );
 }
 
