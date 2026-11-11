@@ -18,7 +18,14 @@ import {
 import type { FacebookPage, SocialConfig } from './types';
 import { emptySocialConfig } from './types';
 
-const FB_SCOPES = ['public_profile', 'pages_show_list', 'pages_read_engagement', 'pages_manage_posts'].join(',');
+const FB_SCOPES = [
+  'public_profile',
+  'pages_show_list',
+  'pages_read_engagement',
+  'pages_manage_posts',
+  'instagram_basic',
+  'instagram_content_publish',
+].join(',');
 const IG_SCOPES = [
   'instagram_business_basic',
   'instagram_business_content_publish',
@@ -106,24 +113,44 @@ export function resolveFacebookCreds(config: SocialConfig) {
 
 export function resolveInstagram(config: SocialConfig) {
   const userId = (config.instagramUserId || '').trim();
-  const token = (config.instagramToken || '').trim();
-  if (!userId || !token) return null;
-  return {
-    userId,
-    username: (config.instagramUsername || '').trim(),
-    accessToken: token,
-  };
+  if (!userId) return null;
+  const username = (config.instagramUsername || '').trim();
+  const igToken = (config.instagramToken || '').trim();
+  if (igToken) {
+    return {
+      userId,
+      username,
+      accessToken: igToken,
+      mode: 'instagram-login' as const,
+      apiBase: igGraphBase(),
+    };
+  }
+  const pageToken = (config.pageToken || '').trim();
+  if (pageToken && (config.instagramSource === 'facebook-page' || !igToken)) {
+    return {
+      userId,
+      username,
+      accessToken: pageToken,
+      mode: 'facebook-page' as const,
+      apiBase: graphBase(),
+    };
+  }
+  return null;
 }
 
 export function socialStatus(config: SocialConfig) {
   const creds = resolveFacebookCreds(config);
   const ig = resolveInstagram(config);
+  const canLinkFromFacebook = Boolean(creds);
   return {
     ok: true as const,
     facebook: Boolean(creds),
     instagram: Boolean(ig),
     oauth: facebookAppReady(),
-    instagramOauth: instagramAppReady(),
+    /** Connect is available via Facebook Page link and/or separate Instagram Login keys. */
+    instagramOauth: facebookAppReady() || instagramAppReady(),
+    instagramViaFacebook: ig?.mode === 'facebook-page',
+    canLinkInstagramFromFacebook: canLinkFromFacebook,
     pageId: creds?.pageId ? 'connected' : '',
     pageName: creds?.pageName || '',
     source: creds?.source || '',
@@ -154,6 +181,53 @@ export function clearInstagramLogin(config: SocialConfig): SocialConfig {
     instagramTokenExpiresAt: '',
     instagramConnectedAt: '',
     instagramLastError: '',
+    instagramSource: '',
+  };
+}
+
+/** Load the Instagram Business account linked to a Facebook Page. */
+export async function fetchPageInstagramAccount(pageId: string, pageToken: string) {
+  const params = new URLSearchParams({
+    fields: 'instagram_business_account{id,username},connected_instagram_account{id,username}',
+    access_token: pageToken,
+  });
+  const response = await fetch(`${graphBase()}/${encodeURIComponent(pageId)}?${params}`);
+  const data = (await response.json()) as {
+    instagram_business_account?: { id?: string; username?: string };
+    connected_instagram_account?: { id?: string; username?: string };
+    error?: { message?: string };
+  };
+  if (!response.ok || data.error) {
+    throw new Error(data.error?.message || 'Could not read Instagram from this Facebook Page.');
+  }
+  const account = data.instagram_business_account || data.connected_instagram_account;
+  const id = String(account?.id || '').trim();
+  if (!id) return null;
+  return { id, username: String(account?.username || '').trim() };
+}
+
+/** Attach the Page's Instagram Business account using the Page access token. */
+export async function linkInstagramFromFacebookPage(config: SocialConfig): Promise<SocialConfig> {
+  const pageId = (config.pageId || '').trim();
+  const pageToken = (config.pageToken || '').trim();
+  if (!pageId || !pageToken) {
+    throw new Error('Connect Facebook and choose a Page first.');
+  }
+  const account = await fetchPageInstagramAccount(pageId, pageToken);
+  if (!account) {
+    throw new Error(
+      'This Facebook Page has no linked Instagram Business account. In Meta Business Suite, link the Instagram account to the Page, then Connect Instagram again.',
+    );
+  }
+  return {
+    ...config,
+    instagramUserId: account.id,
+    instagramUsername: account.username,
+    instagramToken: '',
+    instagramTokenExpiresAt: '',
+    instagramConnectedAt: new Date().toISOString(),
+    instagramLastError: '',
+    instagramSource: 'facebook-page',
   };
 }
 
@@ -284,7 +358,7 @@ export async function completeFacebookOAuth(code: string, origin: string): Promi
     longLived.expiresIn > 0
       ? new Date(Date.now() + longLived.expiresIn * 1000).toISOString()
       : '';
-  return {
+  let next: SocialConfig = {
     ...emptySocialConfig(),
     pageId: selected.id,
     pageName: selected.name,
@@ -296,6 +370,15 @@ export async function completeFacebookOAuth(code: string, origin: string): Promi
     facebookUserToken: longLived.accessToken,
     facebookTokenExpiresAt: expiresAt,
   };
+  try {
+    next = await linkInstagramFromFacebookPage(next);
+  } catch (caught) {
+    next = {
+      ...next,
+      instagramLastError: caught instanceof Error ? caught.message : 'Instagram was not linked from this Page.',
+    };
+  }
+  return next;
 }
 
 async function exchangeInstagramCode(code: string, origin: string) {
@@ -412,6 +495,7 @@ export async function completeInstagramOAuth(
     instagramTokenExpiresAt: expiresAt,
     instagramConnectedAt: new Date().toISOString(),
     instagramLastError: '',
+    instagramSource: 'instagram-login',
   };
 }
 
@@ -448,13 +532,13 @@ export async function refreshInstagramTokenIfNeeded(config: SocialConfig): Promi
   };
 }
 
-async function waitForInstagramContainer(creationId: string, accessToken: string) {
+async function waitForInstagramContainer(creationId: string, accessToken: string, apiBase: string) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const params = new URLSearchParams({
       fields: 'status_code,status',
       access_token: accessToken,
     });
-    const response = await fetch(`${igGraphBase()}/${encodeURIComponent(creationId)}?${params}`);
+    const response = await fetch(`${apiBase}/${encodeURIComponent(creationId)}?${params}`);
     const data = (await response.json()) as {
       status_code?: string;
       status?: string;
@@ -526,7 +610,10 @@ export async function publishInstagram(
 ) {
   const ig = resolveInstagram(config);
   if (!ig) {
-    return { ok: false as const, error: 'Instagram is not connected. Use Connect Instagram in Admin → Social.' };
+    return {
+      ok: false as const,
+      error: 'Instagram is not connected. Connect Instagram in Admin (links from your Facebook Page).',
+    };
   }
 
   const message = input.message.trim().slice(0, 2200);
@@ -536,7 +623,7 @@ export async function publishInstagram(
   if (!/^https:\/\//i.test(image)) {
     return {
       ok: false as const,
-      error: 'Instagram requires a public https image URL. Upload a project image first.',
+      error: 'Instagram requires a public https image URL. Publish from the live site so Meta can fetch the photo.',
     };
   }
 
@@ -545,7 +632,7 @@ export async function publishInstagram(
     caption: message,
     access_token: ig.accessToken,
   });
-  const createRes = await fetch(`${igGraphBase()}/${encodeURIComponent(ig.userId)}/media`, {
+  const createRes = await fetch(`${ig.apiBase}/${encodeURIComponent(ig.userId)}/media`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: createBody,
@@ -559,7 +646,7 @@ export async function publishInstagram(
   }
 
   try {
-    await waitForInstagramContainer(createData.id, ig.accessToken);
+    await waitForInstagramContainer(createData.id, ig.accessToken, ig.apiBase);
   } catch (caught) {
     return {
       ok: false as const,
@@ -571,7 +658,7 @@ export async function publishInstagram(
     creation_id: createData.id,
     access_token: ig.accessToken,
   });
-  const publishRes = await fetch(`${igGraphBase()}/${encodeURIComponent(ig.userId)}/media_publish`, {
+  const publishRes = await fetch(`${ig.apiBase}/${encodeURIComponent(ig.userId)}/media_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: publishBody,
@@ -589,5 +676,6 @@ export async function publishInstagram(
     id: publishData.id || '',
     mode: 'photo',
     username: ig.username,
+    via: ig.mode,
   };
 }

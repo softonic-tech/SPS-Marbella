@@ -22,6 +22,8 @@ export type SocialConfig = {
   instagramTokenExpiresAt?: string;
   instagramConnectedAt?: string;
   instagramLastError?: string;
+  /** How Instagram was connected: Page-linked (preferred) or Instagram Login. */
+  instagramSource?: 'facebook-page' | 'instagram-login' | '';
 };
 
 export type UploadedAsset = {
@@ -63,6 +65,7 @@ export function emptySocialConfig(): SocialConfig {
     instagramTokenExpiresAt: '',
     instagramConnectedAt: '',
     instagramLastError: '',
+    instagramSource: '',
   };
 }
 
@@ -95,6 +98,10 @@ export function parseSocialConfig(raw: string | null): SocialConfig {
       instagramTokenExpiresAt: String(value.instagramTokenExpiresAt ?? '').trim(),
       instagramConnectedAt: String(value.instagramConnectedAt ?? '').trim(),
       instagramLastError: String(value.instagramLastError ?? '').trim(),
+      instagramSource:
+        value.instagramSource === 'facebook-page' || value.instagramSource === 'instagram-login'
+          ? value.instagramSource
+          : '',
     };
   } catch {
     return emptySocialConfig();

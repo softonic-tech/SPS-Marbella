@@ -9,6 +9,8 @@ type SocialStatus = {
   instagram: boolean;
   oauth: boolean;
   instagramOauth: boolean;
+  instagramViaFacebook: boolean;
+  canLinkInstagramFromFacebook: boolean;
   pageName: string;
   pages: { id: string; name: string }[];
   selectedPageId: string;
@@ -37,6 +39,8 @@ const emptyStatus = (): SocialStatus => ({
   instagram: false,
   oauth: false,
   instagramOauth: false,
+  instagramViaFacebook: false,
+  canLinkInstagramFromFacebook: false,
   pageName: '',
   pages: [],
   selectedPageId: '',
@@ -137,7 +141,7 @@ export default function AdminSocialPage() {
     showBanner(
       'working',
       'Connecting',
-      network === 'facebook' ? 'Opening Facebook…' : 'Opening Instagram…',
+      network === 'facebook' ? 'Opening Facebook…' : 'Linking Instagram…',
       'connecting',
     );
     try {
@@ -149,13 +153,34 @@ export default function AdminSocialPage() {
           action: network === 'facebook' ? 'facebook-connect' : 'instagram-connect',
         }),
       });
-      const data = (await response.json()) as { ok?: boolean; url?: string; error?: string };
+      const data = (await response.json()) as SocialStatus & {
+        ok?: boolean;
+        url?: string;
+        linked?: boolean;
+        error?: string;
+      };
       if (response.status === 401) {
         setAuthed(false);
         showBanner('error', 'Error', 'Session expired. Sign in again.', 'error');
         return;
       }
-      if (!response.ok || !data.ok || !data.url) {
+      if (!response.ok || !data.ok) {
+        showBanner('error', 'Error', data.error || 'Could not start connect.', 'error');
+        return;
+      }
+      // Instagram linked from the Facebook Page — no browser redirect.
+      if (network === 'instagram' && data.linked) {
+        setSocial((prev) => ({ ...prev, ...data, drafts: prev.drafts }));
+        showBanner(
+          'success',
+          'Connected',
+          data.instagramUsername
+            ? `Instagram connected · @${data.instagramUsername}`
+            : 'Instagram connected from your Facebook Page.',
+        );
+        return;
+      }
+      if (!data.url) {
         showBanner('error', 'Error', data.error || 'Could not start connect.', 'error');
         return;
       }
@@ -320,10 +345,14 @@ export default function AdminSocialPage() {
                 </span>
                 <span className="sub">
                   {social.instagram
-                    ? `Connected · @${social.instagramUsername || 'account'}`
-                    : social.instagramOauth
-                      ? 'Not connected'
-                      : 'App keys missing in env'}
+                    ? social.instagramViaFacebook
+                      ? `Connected · @${social.instagramUsername || 'account'} via Facebook Page`
+                      : `Connected · @${social.instagramUsername || 'account'}`
+                    : social.canLinkInstagramFromFacebook
+                      ? 'Not connected · link the Business account from your Facebook Page'
+                      : social.instagramOauth
+                        ? 'Connect Facebook first, then link Instagram'
+                        : 'Connect Facebook first'}
                 </span>
               </div>
               {social.instagram ? (
@@ -339,7 +368,7 @@ export default function AdminSocialPage() {
                 <button
                   type="button"
                   className="admin-btn"
-                  disabled={busy || !social.instagramOauth}
+                  disabled={busy || (!social.canLinkInstagramFromFacebook && !social.instagramOauth)}
                   onClick={() => void connect('instagram')}
                 >
                   {phase === 'connecting' ? 'Connecting…' : 'Connect'}
@@ -364,6 +393,14 @@ export default function AdminSocialPage() {
               </select>
             </label>
           ) : null}
+
+          {social.instagramLastError && !social.instagram ? (
+            <p className="admin-hint">{social.instagramLastError}</p>
+          ) : null}
+          <p className="admin-hint">
+            Instagram uses the same Meta app as Facebook. Link an Instagram Business or Creator account to the Page in
+            Meta Business Suite, then reconnect Facebook (to grant Instagram permissions) and Connect Instagram.
+          </p>
         </section>
 
         <AdminProjectPublisher

@@ -35,20 +35,33 @@ export async function POST(request: Request) {
     console.log('[facebook] callback', { origin, redirectUri: facebookRedirectUri(origin) });
     const current = await readSocial();
     const facebook = await completeFacebookOAuth(code, origin);
-    await writeSocial({
-      ...current,
-      ...facebook,
-      instagramUserId: current.instagramUserId,
-      instagramUsername: current.instagramUsername,
-      instagramToken: current.instagramToken,
-      instagramTokenExpiresAt: current.instagramTokenExpiresAt,
-      instagramConnectedAt: current.instagramConnectedAt,
-      instagramLastError: current.instagramLastError,
-    });
+    const next = { ...current, ...facebook };
+    // Keep a separate Instagram Login token if the Page has no linked IG account yet.
+    if (!facebook.instagramUserId && current.instagramToken) {
+      next.instagramUserId = current.instagramUserId;
+      next.instagramUsername = current.instagramUsername;
+      next.instagramToken = current.instagramToken;
+      next.instagramTokenExpiresAt = current.instagramTokenExpiresAt;
+      next.instagramConnectedAt = current.instagramConnectedAt;
+      next.instagramLastError = current.instagramLastError;
+      next.instagramSource = current.instagramSource || 'instagram-login';
+    }
+    await writeSocial(next);
     const saved = await readSocial();
     if (!saved.pageToken) return fail('Token was not saved to storage.');
-    console.log('[facebook] connected', saved.pageId, saved.pageName);
-    return NextResponse.json({ ok: true, pageId: saved.pageId, pageName: saved.pageName });
+    console.log(
+      '[facebook] connected',
+      saved.pageId,
+      saved.pageName,
+      saved.instagramUserId ? `ig=@${saved.instagramUsername || saved.instagramUserId}` : 'ig=none',
+    );
+    return NextResponse.json({
+      ok: true,
+      pageId: saved.pageId,
+      pageName: saved.pageName,
+      instagram: Boolean(saved.instagramUserId),
+      instagramUsername: saved.instagramUsername || '',
+    });
   } catch (caught) {
     return fail(caught instanceof Error ? caught.message : 'Facebook connect failed');
   }

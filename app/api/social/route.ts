@@ -9,6 +9,7 @@ import {
   createOAuthState,
   facebookRedirectUri,
   instagramRedirectUri,
+  linkInstagramFromFacebookPage,
   publishFacebook,
   publishInstagram,
   refreshInstagramTokenIfNeeded,
@@ -17,6 +18,7 @@ import {
 } from '@/lib/social/meta';
 import { absoluteAssetUrl, MAX_PROJECT_PHOTOS, projectById, STAGE_LABEL } from '@/lib/social/project-posts';
 import { listDrafts, readSocial, saveDraft, saveUpload, storageMode, updateDraft, writeSocial } from '@/lib/social/store';
+import type { SocialConfig } from '@/lib/social/types';
 
 async function requireAdmin() {
   return isAdminAuthenticated();
@@ -102,15 +104,23 @@ export async function POST(request: Request) {
   }
 
   if (action === 'facebook-select-page') {
-    const next = selectFacebookPage(await readSocial(), String(body.pageId || '').trim());
+    let next = selectFacebookPage(await readSocial(), String(body.pageId || '').trim());
     if (!next) return NextResponse.json({ ok: false, error: 'That Facebook Page was not found.' }, { status: 400 });
+    try {
+      next = await linkInstagramFromFacebookPage(next);
+    } catch (caught) {
+      next = {
+        ...clearInstagramLogin(next),
+        instagramLastError: caught instanceof Error ? caught.message : 'Instagram was not linked from this Page.',
+      };
+    }
     await writeSocial(next);
     return NextResponse.json(socialStatus(next));
   }
 
   if (action === 'facebook-disconnect') {
     const current = await readSocial();
-    const next = {
+    let next: SocialConfig = {
       ...current,
       pageId: '',
       pageName: '',
@@ -122,16 +132,44 @@ export async function POST(request: Request) {
       facebookUserToken: '',
       facebookTokenExpiresAt: '',
     };
+    // Page-linked Instagram uses the Page token, so clear it with Facebook.
+    if (!current.instagramToken || current.instagramSource === 'facebook-page') {
+      next = clearInstagramLogin(next);
+    }
     await writeSocial(next);
     return NextResponse.json(socialStatus(next));
   }
 
   if (action === 'instagram-connect') {
+    const current = await readSocial();
+    // Preferred path: same Meta app as Facebook — link the Page's Instagram Business account.
+    if (current.pageId && current.pageToken) {
+      try {
+        const next = await linkInstagramFromFacebookPage(current);
+        await writeSocial(next);
+        return NextResponse.json({
+          ...socialStatus(next),
+          linked: true,
+        });
+      } catch (caught) {
+        const message =
+          caught instanceof Error
+            ? caught.message
+            : 'Could not link Instagram from the Facebook Page.';
+        if (!instagramAppReady()) {
+          return NextResponse.json({ ok: false, error: message }, { status: 400 });
+        }
+        // Fall through to Instagram Login when separate app keys are configured.
+        console.warn('[instagram-connect] page link failed, trying Instagram Login:', message);
+      }
+    }
+
     if (!instagramAppReady()) {
       return NextResponse.json(
         {
           ok: false,
-          error: 'Set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET first.',
+          error:
+            'Connect Facebook first, then Connect Instagram to use the Page’s linked Instagram Business account. Or set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET for Instagram Login.',
           redirectUri: instagramRedirectUri(origin),
         },
         { status: 400 },

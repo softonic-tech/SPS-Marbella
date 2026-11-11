@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CLIENT_PROJECTS, type ClientProject, type ProjectStage } from '@/lib/projects';
 import { MAX_PROJECT_PHOTOS, STAGE_LABEL } from '@/lib/social/project-posts';
 
@@ -49,7 +49,7 @@ export default function AdminProjectPublisher({
       : '',
   );
   const [postFacebook, setPostFacebook] = useState(true);
-  const [postInstagram, setPostInstagram] = useState(false);
+  const [postInstagram, setPostInstagram] = useState(instagramConnected);
 
   const project = CLIENT_PROJECTS.find((item) => item.id === projectId) ?? CLIENT_PROJECTS[0];
   const stages = project ? stagesOf(project) : [];
@@ -69,6 +69,16 @@ export default function AdminProjectPublisher({
     setSelected([]);
     setCaption(`${next.name}\n${KIND_LABEL[next.kind]} · ${CATEGORY_LABEL[next.category]}\n\nSPS Marbella`);
   };
+
+  useEffect(() => {
+    if (instagramConnected) setPostInstagram(true);
+    else setPostInstagram(false);
+  }, [instagramConnected]);
+
+  useEffect(() => {
+    if (!facebookConnected) setPostFacebook(false);
+    else setPostFacebook(true);
+  }, [facebookConnected]);
 
   const atLimit = selectedCount >= MAX_PROJECT_PHOTOS;
 
