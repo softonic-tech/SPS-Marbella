@@ -171,7 +171,7 @@ export const en: Translation = {
     message: 'A little about your project',
     send: 'Send enquiry',
     required: 'Please complete your name, email and project details.',
-    success: 'Thank you. Your email app will open with your enquiry ready to send.',
+    success: 'Thank you. Your enquiry was received and the team will review it shortly.',
     mail: 'To send this form, please connect SPS Marbella’s preferred contact email.',
   },
   investorTitle: 'Interested in a development opportunity?',

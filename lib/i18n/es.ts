@@ -170,7 +170,7 @@ export const es: Translation = {
     message: 'Cuéntenos un poco sobre su proyecto',
     send: 'Enviar consulta',
     required: 'Complete su nombre, correo electrónico y los detalles del proyecto.',
-    success: 'Gracias. Se abrirá su aplicación de correo con la consulta preparada.',
+    success: 'Gracias. Hemos recibido su consulta y el equipo la revisará en breve.',
     mail: 'Para enviar este formulario, añada el correo de contacto preferido de SPS Marbella.',
   },
   investorTitle: '¿Le interesa una oportunidad de inversión?',

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import AdminSocialPage from '@/components/admin/AdminSocialPage';
+import AdminApp from '@/components/admin/AdminApp';
 
 export const metadata: Metadata = {
   title: 'Admin',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminPage() {
-  return <AdminSocialPage />;
+  return <AdminApp />;
 }

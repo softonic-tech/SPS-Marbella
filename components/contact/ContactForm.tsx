@@ -2,59 +2,70 @@
 
 import { useState, type FormEvent } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { CONTACT_EMAIL } from '@/lib/site';
 
 type StatusKey = 'mail' | 'success';
 
 /**
- * Enquiry form. Mirrors the approved behaviour exactly: with no enquiry inbox
- * configured it shows the "connect a contact email" notice; once
- * `CONTACT_EMAIL` is set in lib/site.ts it opens the visitor's mail client with
- * the enquiry pre-filled.
- *
- * The status is held as a key rather than a string so the message follows the
- * language switcher, just as the original full re-render did.
+ * Enquiry form. Saves the request for the admin inbox, then shows a success message.
  */
 export default function ContactForm() {
   const { t } = useLanguage();
   const f = t.form;
   const [status, setStatus] = useState<StatusKey | null>(null);
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setSending(true);
+    setError('');
+    setStatus(null);
 
-    if (!CONTACT_EMAIL) {
-      setStatus('mail');
-      return;
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.get('name'),
+          email: data.get('email'),
+          phone: data.get('phone'),
+          projectType: data.get('type'),
+          message: data.get('message'),
+        }),
+      });
+      const result = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !result.ok) {
+        setError(result.error || f.required);
+        return;
+      }
+      setStatus('success');
+      form.reset();
+    } catch {
+      setError(f.required);
+    } finally {
+      setSending(false);
     }
-
-    setStatus('success');
-    const subject = encodeURIComponent('SPS Marbella project enquiry');
-    const body = encodeURIComponent(
-      `Name: ${data.get('name')}\nEmail: ${data.get('email')}\nPhone: ${data.get('phone')}\n` +
-        `Project: ${data.get('type')}\n\n${data.get('message')}`,
-    );
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
   }
 
   return (
-    <form className="form" id="contact-form" onSubmit={handleSubmit}>
+    <form className="form" id="contact-form" onSubmit={(event) => void handleSubmit(event)}>
       <label>
         {f.name}
-        <input name="name" required autoComplete="name" />
+        <input name="name" required autoComplete="name" disabled={sending} />
       </label>
       <label>
         {f.email}
-        <input type="email" name="email" required autoComplete="email" />
+        <input type="email" name="email" required autoComplete="email" disabled={sending} />
       </label>
       <label>
         {f.phone}
-        <input name="phone" autoComplete="tel" />
+        <input name="phone" autoComplete="tel" disabled={sending} />
       </label>
       <label>
         {f.type}
-        <select name="type" defaultValue="">
+        <select name="type" defaultValue="" disabled={sending}>
           <option value="">{f.select}</option>
           {f.options.map((option) => (
             <option key={option}>{option}</option>
@@ -63,14 +74,14 @@ export default function ContactForm() {
       </label>
       <label>
         {f.message}
-        <textarea name="message" required />
+        <textarea name="message" required disabled={sending} />
       </label>
-      <button className="btn dark" type="submit">
-        {f.send}
+      <button className="btn dark" type="submit" disabled={sending}>
+        {sending ? '…' : f.send}
         <span className="arrow">↗</span>
       </button>
       <div className="form-status" aria-live="polite">
-        {status ? f[status] : null}
+        {error ? error : status ? f[status] : null}
       </div>
     </form>
   );
