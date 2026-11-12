@@ -169,7 +169,7 @@ export const sv: Translation = {
     message: 'Berätta lite om ditt projekt',
     send: 'Skicka förfrågan',
     required: 'Fyll i namn, e-post och projektbeskrivning.',
-    success: 'Tack. Din e-postapp öppnas med förfrågan ifylld.',
+    success: 'Tack. Din förfrågan har mottagits och teamet går igenom den inom kort.',
     mail: 'Lägg till SPS Marbellas kontaktadress för att kunna skicka formuläret.',
   },
   investorTitle: 'Intresserad av en utvecklingsmöjlighet?',
